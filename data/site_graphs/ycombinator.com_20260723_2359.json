@@ -1,0 +1,570 @@
+{
+  "domain": "ycombinator.com",
+  "base_url": "https://www.ycombinator.com",
+  "site_type": "corporate",
+  "description": "Y Combinator is a startup funding model that provides resources and support to early-stage companies.",
+  "pages": [
+    {
+      "url": "https://www.ycombinator.com",
+      "url_pattern": "https://www\\.ycombinator\\.com",
+      "page_type": "homepage",
+      "title": "Y Combinator",
+      "purpose": "This page is for introducing Y Combinator and its startup funding model.",
+      "elements": [
+        {
+          "element_type": "link",
+          "selector": "a.mb-1.mt-1",
+          "label": "Y Combinator",
+          "purpose": "Navigates to the Y Combinator homepage.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.nav-link.inline-flex",
+          "label": "About",
+          "purpose": "Navigates to the About page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.dropdown-item",
+          "label": "Apply",
+          "purpose": "Navigates to the application page for startup funding.",
+          "required": true
+        },
+        {
+          "element_type": "link",
+          "selector": "a.dropdown-item",
+          "label": "FAQ",
+          "purpose": "Navigates to the Frequently Asked Questions page.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [
+        "https://www.ycombinator.com/jobs",
+        "https://www.ycombinator.com/apply",
+        "https://www.ycombinator.com/about",
+        "https://www.ycombinator.com/founders",
+        "https://www.ycombinator.com/people",
+        "https://www.ycombinator.com/people/garry-tan",
+        "https://www.ycombinator.com/people/harj-taggar",
+        "https://www.ycombinator.com/people/jared-friedman",
+        "https://www.ycombinator.com/people/aaron-epstein",
+        "https://www.ycombinator.com/people/diana-hu"
+      ],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T23:58:02.454702"
+    },
+    {
+      "url": "https://www.ycombinator.com/jobs",
+      "url_pattern": "https://www\\.ycombinator\\.com/jobs",
+      "page_type": "listing",
+      "title": "Find the best startup jobs and remote jobs curated by Y Combinator. | Y Combinator",
+      "purpose": "This page is for listing startup jobs and remote jobs curated by Y Combinator.",
+      "elements": [
+        {
+          "element_type": "link",
+          "selector": "a.mb-1.mt-1",
+          "label": "Y Combinator",
+          "purpose": "Navigate to the Y Combinator homepage",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.nav-link.inline-flex",
+          "label": "About",
+          "purpose": "Navigate to the About page",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.nav-link.inline-flex",
+          "label": "Companies",
+          "purpose": "Navigate to the Companies page",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.dropdown-item",
+          "label": "Apply",
+          "purpose": "Navigate to the Apply page",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "[aria-label=\"previous\"]",
+          "label": "previous",
+          "purpose": "Navigate to the previous page of job listings",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "[aria-label=\"next\"]",
+          "label": "next",
+          "purpose": "Navigate to the next page of job listings",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [
+        "https://www.ycombinator.com/jobs",
+        "https://www.ycombinator.com/jobs/role/designer",
+        "https://www.ycombinator.com/jobs/role/product-manager",
+        "https://www.ycombinator.com/jobs/role/recruiting-hr",
+        "https://www.ycombinator.com/jobs/role/sales-manager",
+        "https://www.ycombinator.com/jobs/role/science",
+        "https://www.ycombinator.com/companies/soraban/jobs/1qaL5ow-ai-first-fullstack-software-engineer-in-person-5x-a-week",
+        "https://www.ycombinator.com/companies/confido/jobs/J6DgVvC-senior-software-engineer",
+        "https://www.ycombinator.com/companies/porter/jobs/6QhplSz-full-stack-engineer",
+        "https://www.ycombinator.com/companies/candid-health/jobs/WIMeHdk-software-engineer"
+      ],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T23:58:25.622376"
+    },
+    {
+      "url": "https://www.ycombinator.com/people",
+      "url_pattern": "https://www\\.ycombinator\\.com/people",
+      "page_type": "listing",
+      "title": "People | Y Combinator",
+      "purpose": "This page lists the people involved with Y Combinator, including partners and their backgrounds.",
+      "elements": [
+        {
+          "element_type": "link",
+          "selector": "a.mb-1.mt-1",
+          "label": "Y Combinator",
+          "purpose": "Navigate to the Y Combinator homepage.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.nav-link.inline-flex",
+          "label": "About",
+          "purpose": "Navigate to the About page for more information on Y Combinator.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.dropdown-item",
+          "label": "Apply",
+          "purpose": "Navigate to the application page to apply for Y Combinator.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.dropdown-item",
+          "label": "People",
+          "purpose": "Navigate to the People page, which is the current page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.nav-link.inline-flex",
+          "label": "Companies",
+          "purpose": "Navigate to the Companies page to view a list of companies involved with Y Combinator.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [
+        "https://www.ycombinator.com/jobs",
+        "https://www.ycombinator.com/apply",
+        "https://www.ycombinator.com/about",
+        "https://www.ycombinator.com/founders",
+        "https://www.ycombinator.com/people",
+        "https://www.ycombinator.com/people/garry-tan",
+        "https://www.ycombinator.com/people/gustaf-alstromer",
+        "https://www.ycombinator.com/people/harshita-arora",
+        "https://www.ycombinator.com/people/grey-baker",
+        "https://www.ycombinator.com/people/tom-blomfield"
+      ],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T23:58:37.807024"
+    },
+    {
+      "url": "https://www.ycombinator.com/people/garry-tan",
+      "url_pattern": "https://www\\.ycombinator\\.com/people/garry-tan",
+      "page_type": "article",
+      "title": "Garry Tan: YC Partner | Y Combinator",
+      "purpose": "This page is for displaying information about Garry Tan, a Y Combinator partner.",
+      "elements": [
+        {
+          "element_type": "link",
+          "selector": "a.mb-1.mt-1",
+          "label": "Y Combinator",
+          "purpose": "Navigate to the Y Combinator homepage.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.nav-link.inline-flex",
+          "label": "About",
+          "purpose": "Navigate to the Y Combinator about page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.dropdown-item",
+          "label": "Apply",
+          "purpose": "Navigate to the Y Combinator application page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.dropdown-item",
+          "label": "People",
+          "purpose": "Navigate to the Y Combinator people page.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [
+        "https://www.ycombinator.com/jobs",
+        "https://www.ycombinator.com/apply",
+        "https://www.ycombinator.com/about",
+        "https://www.ycombinator.com/founders",
+        "https://www.ycombinator.com/people",
+        "https://www.ycombinator.com/press",
+        "https://www.ycombinator.com/blog",
+        "https://www.ycombinator.com/blog/yc-top-companies-list-by-revenue",
+        "https://www.ycombinator.com/blog/tom-blomfield-of-gocardless-and-monzo-is-our-newest-group-partner",
+        "https://www.ycombinator.com/blog/author/garry"
+      ],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T23:58:52.578745"
+    },
+    {
+      "url": "https://www.ycombinator.com/jobs/role/designer",
+      "url_pattern": "https://www\\.ycombinator\\.com/jobs/role/designer",
+      "page_type": "listing",
+      "title": "Design jobs at Y Combinator startups | Y Combinator",
+      "purpose": "This page lists design jobs at Y Combinator startups.",
+      "elements": [
+        {
+          "element_type": "link",
+          "selector": "a.mb-1.mt-1",
+          "label": "Y Combinator",
+          "purpose": "Navigate to the Y Combinator homepage.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.nav-link.inline-flex",
+          "label": "About",
+          "purpose": "Navigate to the About page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.dropdown-item",
+          "label": "Apply",
+          "purpose": "Navigate to the application page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.nav-link.inline-flex",
+          "label": "Companies",
+          "purpose": "Navigate to the companies page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.dropdown-item",
+          "label": "Create a profile to see more jobs",
+          "purpose": "Create a profile to view more job listings.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [
+        "https://www.ycombinator.com/jobs",
+        "https://www.ycombinator.com/jobs/role/designer/san-francisco",
+        "https://www.ycombinator.com/jobs/role/designer/new-york",
+        "https://www.ycombinator.com/jobs/role/designer/los-angeles",
+        "https://www.ycombinator.com/jobs/role/designer/seattle",
+        "https://www.ycombinator.com/jobs/role/designer/boston",
+        "https://www.ycombinator.com/jobs/role/designer/austin",
+        "https://www.ycombinator.com/jobs/role/designer/india",
+        "https://www.ycombinator.com/jobs/role/designer/remote",
+        "https://www.ycombinator.com/jobs/role/software-engineer"
+      ],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T23:59:04.969156"
+    },
+    {
+      "url": "https://www.ycombinator.com/jobs/role/product-manager",
+      "url_pattern": "https://www\\.ycombinator\\.com/jobs/role/product-manager",
+      "page_type": "listing",
+      "title": "Product Manager jobs at Y Combinator startups | Y Combinator",
+      "purpose": "This page lists product manager job openings at Y Combinator startups.",
+      "elements": [
+        {
+          "element_type": "link",
+          "selector": "a.mb-1.mt-1",
+          "label": "Y Combinator",
+          "purpose": "Navigate to the Y Combinator homepage.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.nav-link.inline-flex",
+          "label": "About",
+          "purpose": "Navigate to the About page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.dropdown-item",
+          "label": "Apply",
+          "purpose": "Navigate to the application page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.nav-link.inline-flex",
+          "label": "Companies",
+          "purpose": "Navigate to the companies page.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [
+        "https://www.ycombinator.com/jobs",
+        "https://www.ycombinator.com/jobs/role/product-manager/san-francisco",
+        "https://www.ycombinator.com/jobs/role/product-manager/new-york",
+        "https://www.ycombinator.com/jobs/role/product-manager/los-angeles",
+        "https://www.ycombinator.com/jobs/role/product-manager/seattle",
+        "https://www.ycombinator.com/jobs/role/product-manager/boston",
+        "https://www.ycombinator.com/jobs/role/product-manager/austin",
+        "https://www.ycombinator.com/jobs/role/product-manager/india",
+        "https://www.ycombinator.com/jobs/role/product-manager/remote",
+        "https://www.ycombinator.com/jobs/role/software-engineer"
+      ],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T23:59:16.984299"
+    }
+  ],
+  "edges": [
+    {
+      "from_url_pattern": "^https://www.ycombinator.com/$",
+      "to_url_pattern": "^https://www.ycombinator.com/about$",
+      "action_type": "click",
+      "selector": "a.nav-link.inline-flex",
+      "input_value": null,
+      "description": "Navigate to the About page",
+      "wait_for": "a.nav-link.inline-flex",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.ycombinator.com/$",
+      "to_url_pattern": "^https://www.ycombinator.com/apply$",
+      "action_type": "click",
+      "selector": "a.dropdown-item",
+      "input_value": null,
+      "description": "Navigate to the Apply page",
+      "wait_for": "a.dropdown-item",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.ycombinator.com/$",
+      "to_url_pattern": "^https://www.ycombinator.com/jobs$",
+      "action_type": "click",
+      "selector": "a.mb-1.mt-1",
+      "input_value": null,
+      "description": "Navigate to the Jobs page",
+      "wait_for": "a.mb-1.mt-1",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.ycombinator.com/jobs$",
+      "to_url_pattern": "^https://www.ycombinator.com/jobs/role/designer$",
+      "action_type": "click",
+      "selector": "a.dropdown-item",
+      "input_value": null,
+      "description": "Navigate to the Designer job listings page",
+      "wait_for": "a.dropdown-item",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.ycombinator.com/jobs$",
+      "to_url_pattern": "^https://www.ycombinator.com/jobs/role/product-manager$",
+      "action_type": "click",
+      "selector": "a.dropdown-item",
+      "input_value": null,
+      "description": "Navigate to the Product Manager job listings page",
+      "wait_for": "a.dropdown-item",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.ycombinator.com/jobs/role/designer$",
+      "to_url_pattern": "^https://www.ycombinator.com/jobs$",
+      "action_type": "click",
+      "selector": "a.mb-1.mt-1",
+      "input_value": null,
+      "description": "Navigate back to the Jobs page",
+      "wait_for": "a.mb-1.mt-1",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.ycombinator.com/jobs/role/product-manager$",
+      "to_url_pattern": "^https://www.ycombinator.com/jobs$",
+      "action_type": "click",
+      "selector": "a.mb-1.mt-1",
+      "input_value": null,
+      "description": "Navigate back to the Jobs page",
+      "wait_for": "a.mb-1.mt-1",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.ycombinator.com/$",
+      "to_url_pattern": "^https://www.ycombinator.com/people$",
+      "action_type": "click",
+      "selector": "a.nav-link.inline-flex",
+      "input_value": null,
+      "description": "Navigate to the People page",
+      "wait_for": "a.nav-link.inline-flex",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.ycombinator.com/people$",
+      "to_url_pattern": "^https://www.ycombinator.com/people/garry-tan$",
+      "action_type": "click",
+      "selector": "a.dropdown-item",
+      "input_value": null,
+      "description": "Navigate to the Garry Tan page",
+      "wait_for": "a.dropdown-item",
+      "confidence": 0.9
+    }
+  ],
+  "flows": [
+    {
+      "flow_name": "apply_for_funding",
+      "description": "Apply for startup funding",
+      "steps": [
+        {
+          "from_url_pattern": "^https://www.ycombinator.com/$",
+          "to_url_pattern": "^https://www.ycombinator.com/apply$",
+          "action_type": "click",
+          "selector": "a.dropdown-item",
+          "input_value": null,
+          "description": "Navigate to the Apply page",
+          "wait_for": "a.dropdown-item",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [],
+      "success_indicator": "a.dropdown-item",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "find_designer_jobs",
+      "description": "Find designer job listings",
+      "steps": [
+        {
+          "from_url_pattern": "^https://www.ycombinator.com/$",
+          "to_url_pattern": "^https://www.ycombinator.com/jobs$",
+          "action_type": "click",
+          "selector": "a.mb-1.mt-1",
+          "input_value": null,
+          "description": "Navigate to the Jobs page",
+          "wait_for": "a.mb-1.mt-1",
+          "confidence": 0.9
+        },
+        {
+          "from_url_pattern": "^https://www.ycombinator.com/jobs$",
+          "to_url_pattern": "^https://www.ycombinator.com/jobs/role/designer$",
+          "action_type": "click",
+          "selector": "a.dropdown-item",
+          "input_value": null,
+          "description": "Navigate to the Designer job listings page",
+          "wait_for": "a.dropdown-item",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [],
+      "success_indicator": "a.dropdown-item",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "find_product_manager_jobs",
+      "description": "Find product manager job listings",
+      "steps": [
+        {
+          "from_url_pattern": "^https://www.ycombinator.com/$",
+          "to_url_pattern": "^https://www.ycombinator.com/jobs$",
+          "action_type": "click",
+          "selector": "a.mb-1.mt-1",
+          "input_value": null,
+          "description": "Navigate to the Jobs page",
+          "wait_for": "a.mb-1.mt-1",
+          "confidence": 0.9
+        },
+        {
+          "from_url_pattern": "^https://www.ycombinator.com/jobs$",
+          "to_url_pattern": "^https://www.ycombinator.com/jobs/role/product-manager$",
+          "action_type": "click",
+          "selector": "a.dropdown-item",
+          "input_value": null,
+          "description": "Navigate to the Product Manager job listings page",
+          "wait_for": "a.dropdown-item",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [],
+      "success_indicator": "a.dropdown-item",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "learn_about_y_combinator",
+      "description": "Learn about Y Combinator",
+      "steps": [
+        {
+          "from_url_pattern": "^https://www.ycombinator.com/$",
+          "to_url_pattern": "^https://www.ycombinator.com/about$",
+          "action_type": "click",
+          "selector": "a.nav-link.inline-flex",
+          "input_value": null,
+          "description": "Navigate to the About page",
+          "wait_for": "a.nav-link.inline-flex",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [],
+      "success_indicator": "a.nav-link.inline-flex",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "learn_about_people",
+      "description": "Learn about people involved with Y Combinator",
+      "steps": [
+        {
+          "from_url_pattern": "^https://www.ycombinator.com/$",
+          "to_url_pattern": "^https://www.ycombinator.com/people$",
+          "action_type": "click",
+          "selector": "a.nav-link.inline-flex",
+          "input_value": null,
+          "description": "Navigate to the People page",
+          "wait_for": "a.nav-link.inline-flex",
+          "confidence": 0.9
+        },
+        {
+          "from_url_pattern": "^https://www.ycombinator.com/people$",
+          "to_url_pattern": "^https://www.ycombinator.com/people/garry-tan$",
+          "action_type": "click",
+          "selector": "a.dropdown-item",
+          "input_value": null,
+          "description": "Navigate to the Garry Tan page",
+          "wait_for": "a.dropdown-item",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [],
+      "success_indicator": "a.dropdown-item",
+      "times_used": 0,
+      "success_rate": 1.0
+    }
+  ],
+  "pages_explored": 6,
+  "learned_at": "2026-07-23T23:59:27.567757",
+  "updated_at": "2026-07-23T23:59:27.567772",
+  "explorer_version": "1.0"
+}

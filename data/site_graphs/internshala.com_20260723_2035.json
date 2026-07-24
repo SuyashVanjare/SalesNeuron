@@ -1,0 +1,416 @@
+{
+  "domain": "internshala.com",
+  "base_url": "https://www.internshala.com",
+  "site_type": "job_board",
+  "description": "Internshala is a platform for searching and exploring internships, jobs, and courses.",
+  "pages": [
+    {
+      "url": "https://www.internshala.com",
+      "url_pattern": "https://www\\.internshala\\.com",
+      "page_type": "homepage",
+      "title": "Search Internships, Jobs, & Courses | Hire Candidates | Internshala",
+      "purpose": "This page is for searching and exploring internships, jobs, and courses.",
+      "elements": [
+        {
+          "element_type": "button",
+          "selector": "button.search-cta",
+          "label": "Search",
+          "purpose": "Initiates a search for internships, jobs, or courses.",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "button.cta",
+          "label": "Know More",
+          "purpose": "Provides more information about a specific internship, job, or course.",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "button.btn.btn-primary",
+          "label": "Build my resume",
+          "purpose": "Redirects to a resume-building tool.",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "button.btn.btn_large",
+          "label": "Post now for free",
+          "purpose": "Allows employers to post job listings for free.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.specialization-training-link",
+          "label": "Internships",
+          "purpose": "Navigates to the internships page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.specialization-training-link",
+          "label": "Jobs",
+          "purpose": "Navigates to the jobs page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.specialization-training-link",
+          "label": "Courses",
+          "purpose": "Navigates to the courses page.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:32:25.498877"
+    },
+    {
+      "url": "https://www.internshala.com/about",
+      "url_pattern": "https://www\\.internshala\\.com/about",
+      "page_type": "other",
+      "title": "404: Page not found",
+      "purpose": "This page is for displaying a 404 error message when the requested page is not found.",
+      "elements": [],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:32:36.148763"
+    },
+    {
+      "url": "https://www.internshala.com/pricing",
+      "url_pattern": "https://www\\.internshala\\.com/pricing",
+      "page_type": "other",
+      "title": "404: Page not found",
+      "purpose": "This page is for displaying a 404 error message when the requested page is not found.",
+      "elements": [],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:33:57.785446"
+    },
+    {
+      "url": "https://www.internshala.com/login",
+      "url_pattern": "https://www\\.internshala\\.com/login",
+      "page_type": "login",
+      "title": "Search Internships, Jobs, & Courses | Hire Candidates | Internshala",
+      "purpose": "This page is for users to log in to their Internshala account.",
+      "elements": [
+        {
+          "element_type": "input",
+          "selector": "#email",
+          "label": "Email",
+          "purpose": "Enter the user's email address to log in.",
+          "required": true
+        },
+        {
+          "element_type": "input",
+          "selector": "#password",
+          "label": "Password",
+          "purpose": "Enter the user's password to log in.",
+          "required": true
+        },
+        {
+          "element_type": "button",
+          "selector": "#login_submit",
+          "label": "Login",
+          "purpose": "Submit the login credentials to access the user's account.",
+          "required": true
+        }
+      ],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:34:33.364584"
+    },
+    {
+      "url": "https://www.internshala.com/signup",
+      "url_pattern": "https://www\\.internshala\\.com/signup",
+      "page_type": "other",
+      "title": "404: Page not found",
+      "purpose": "This page is for displaying a 404 error when the requested page cannot be found.",
+      "elements": [],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:34:43.809342"
+    },
+    {
+      "url": "https://www.internshala.com/contact",
+      "url_pattern": "https://www\\.internshala\\.com/contact",
+      "page_type": "other",
+      "title": "Internshala | Contact us",
+      "purpose": "This page is for providing contact information and resources for users to get in touch with Internshala.",
+      "elements": [
+        {
+          "element_type": "link",
+          "selector": "a.specialization-training-link",
+          "label": "Home",
+          "purpose": "Navigate to the Internshala homepage.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.specialization-training-link",
+          "label": "Internships",
+          "purpose": "Navigate to the internships page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a.specialization-training-link",
+          "label": "Jobs",
+          "purpose": "Navigate to the jobs page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a",
+          "label": "Register - As a Student",
+          "purpose": "Navigate to the student registration page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a",
+          "label": "Register - As an Employer",
+          "purpose": "Navigate to the employer registration page.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "a",
+          "label": "Contact Us",
+          "purpose": "Navigate to the contact us page.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:35:09.511976"
+    }
+  ],
+  "edges": [
+    {
+      "from_url_pattern": "^https://www.internshala.com$",
+      "to_url_pattern": "^https://www.internshala.com/internships$",
+      "action_type": "click",
+      "selector": "a.specialization-training-link",
+      "input_value": null,
+      "description": "Navigate to the internships page",
+      "wait_for": null,
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.internshala.com$",
+      "to_url_pattern": "^https://www.internshala.com/jobs$",
+      "action_type": "click",
+      "selector": "a.specialization-training-link",
+      "input_value": null,
+      "description": "Navigate to the jobs page",
+      "wait_for": null,
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.internshala.com$",
+      "to_url_pattern": "^https://www.internshala.com/courses$",
+      "action_type": "click",
+      "selector": "a.specialization-training-link",
+      "input_value": null,
+      "description": "Navigate to the courses page",
+      "wait_for": null,
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.internshala.com$",
+      "to_url_pattern": "^https://www.internshala.com/login$",
+      "action_type": "click",
+      "selector": "button.btn.btn-primary",
+      "input_value": null,
+      "description": "Navigate to the login page",
+      "wait_for": null,
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.internshala.com/login$",
+      "to_url_pattern": "^https://www.internshala.com$",
+      "action_type": "submit",
+      "selector": "#login_submit",
+      "input_value": null,
+      "description": "Login to the user's account",
+      "wait_for": null,
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.internshala.com$",
+      "to_url_pattern": "^https://www.internshala.com/contact$",
+      "action_type": "click",
+      "selector": "a.specialization-training-link",
+      "input_value": null,
+      "description": "Navigate to the contact page",
+      "wait_for": null,
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.internshala.com/contact$",
+      "to_url_pattern": "^https://www.internshala.com$",
+      "action_type": "click",
+      "selector": "a.specialization-training-link",
+      "input_value": null,
+      "description": "Navigate to the homepage",
+      "wait_for": null,
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.internshala.com$",
+      "to_url_pattern": "^https://www.internshala.com/internships$",
+      "action_type": "click",
+      "selector": "button.search-cta",
+      "input_value": null,
+      "description": "Search for internships",
+      "wait_for": null,
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.internshala.com$",
+      "to_url_pattern": "^https://www.internshala.com/jobs$",
+      "action_type": "click",
+      "selector": "button.search-cta",
+      "input_value": null,
+      "description": "Search for jobs",
+      "wait_for": null,
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://www.internshala.com$",
+      "to_url_pattern": "^https://www.internshala.com/courses$",
+      "action_type": "click",
+      "selector": "button.search-cta",
+      "input_value": null,
+      "description": "Search for courses",
+      "wait_for": null,
+      "confidence": 0.9
+    }
+  ],
+  "flows": [
+    {
+      "flow_name": "search_internships",
+      "description": "Search for internships",
+      "steps": [
+        {
+          "from_url_pattern": "^https://www.internshala.com$",
+          "to_url_pattern": "^https://www.internshala.com/internships$",
+          "action_type": "click",
+          "selector": "button.search-cta",
+          "input_value": "{query}",
+          "description": "Search for internships",
+          "wait_for": "a.specialization-training-link",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [
+        "query"
+      ],
+      "success_indicator": "a.specialization-training-link",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "search_jobs",
+      "description": "Search for jobs",
+      "steps": [
+        {
+          "from_url_pattern": "^https://www.internshala.com$",
+          "to_url_pattern": "^https://www.internshala.com/jobs$",
+          "action_type": "click",
+          "selector": "button.search-cta",
+          "input_value": "{query}",
+          "description": "Search for jobs",
+          "wait_for": "a.specialization-training-link",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [
+        "query"
+      ],
+      "success_indicator": "a.specialization-training-link",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "search_courses",
+      "description": "Search for courses",
+      "steps": [
+        {
+          "from_url_pattern": "^https://www.internshala.com$",
+          "to_url_pattern": "^https://www.internshala.com/courses$",
+          "action_type": "click",
+          "selector": "button.search-cta",
+          "input_value": "{query}",
+          "description": "Search for courses",
+          "wait_for": "a.specialization-training-link",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [
+        "query"
+      ],
+      "success_indicator": "a.specialization-training-link",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "login",
+      "description": "Login to the user's account",
+      "steps": [
+        {
+          "from_url_pattern": "^https://www.internshala.com$",
+          "to_url_pattern": "^https://www.internshala.com/login$",
+          "action_type": "click",
+          "selector": "button.btn.btn-primary",
+          "input_value": null,
+          "description": "Navigate to the login page",
+          "wait_for": "#login_submit",
+          "confidence": 0.9
+        },
+        {
+          "from_url_pattern": "^https://www.internshala.com/login$",
+          "to_url_pattern": "^https://www.internshala.com$",
+          "action_type": "type",
+          "selector": "#email",
+          "input_value": "{email}",
+          "description": "Enter the user's email address",
+          "wait_for": null,
+          "confidence": 0.9
+        },
+        {
+          "from_url_pattern": "^https://www.internshala.com/login$",
+          "to_url_pattern": "^https://www.internshala.com$",
+          "action_type": "type",
+          "selector": "#password",
+          "input_value": "{password}",
+          "description": "Enter the user's password",
+          "wait_for": null,
+          "confidence": 0.9
+        },
+        {
+          "from_url_pattern": "^https://www.internshala.com/login$",
+          "to_url_pattern": "^https://www.internshala.com$",
+          "action_type": "submit",
+          "selector": "#login_submit",
+          "input_value": null,
+          "description": "Login to the user's account",
+          "wait_for": null,
+          "confidence": 0.9
+        }
+      ],
+      "variables": [
+        "email",
+        "password"
+      ],
+      "success_indicator": "#login_submit",
+      "times_used": 0,
+      "success_rate": 1.0
+    }
+  ],
+  "pages_explored": 6,
+  "learned_at": "2026-07-23T20:35:29.075191",
+  "updated_at": "2026-07-23T20:35:29.075208",
+  "explorer_version": "1.0"
+}

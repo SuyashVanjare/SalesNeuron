@@ -1,0 +1,399 @@
+{
+  "domain": "amazon.com",
+  "base_url": "https://amazon.com",
+  "site_type": "ecommerce",
+  "description": "This site allows users to search, browse, and purchase various products.",
+  "pages": [
+    {
+      "url": "https://amazon.com",
+      "url_pattern": "https://amazon\\.com",
+      "page_type": "homepage",
+      "title": "Amazon.com. Spend less. Smile more.",
+      "purpose": "This page is for displaying various products and categories to users, allowing them to search and navigate through the Amazon website.",
+      "elements": [
+        {
+          "element_type": "input",
+          "selector": "#twotabsearchtextbox",
+          "label": "Search Amazon",
+          "purpose": "Allows users to enter search queries to find specific products.",
+          "required": true
+        },
+        {
+          "element_type": "input",
+          "selector": "#nav-search-submit-button",
+          "label": "submit",
+          "purpose": "Submits the search query to display relevant results.",
+          "required": true
+        },
+        {
+          "element_type": "select",
+          "selector": "#searchDropdownBox",
+          "label": "All Departments",
+          "purpose": "Allows users to filter search results by department.",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "#nav-global-location-popover-link",
+          "label": "Deliver to\nIndia",
+          "purpose": "Changes the delivery location for the user's account.",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "[aria-label=\"Expand Account and Lists\"]",
+          "label": "Expand Account and Lists",
+          "purpose": "Displays the user's account and list options.",
+          "required": false
+        },
+        {
+          "element_type": "link",
+          "selector": "#nav-logo-sprites",
+          "label": "Amazon",
+          "purpose": "Redirects users to the Amazon homepage.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:08:29.705970"
+    },
+    {
+      "url": "https://amazon.com/s?k=laptop",
+      "url_pattern": "https://amazon\\.com/s",
+      "page_type": "search_results",
+      "title": "Amazon.com : laptop",
+      "purpose": "This page is for displaying search results for laptops on Amazon.",
+      "elements": [
+        {
+          "element_type": "button",
+          "selector": "#nav-assist-skip-to-filter-sidebar",
+          "label": "Filters",
+          "purpose": "Opens the filter sidebar to narrow down search results.",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "#nav-global-location-popover-link",
+          "label": "Deliver to India",
+          "purpose": "Changes the delivery location for search results.",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "[aria-label=\"Expand to Change Language or Country\"]",
+          "label": "Expand to Change Language or Country",
+          "purpose": "Opens a menu to change the language or country settings.",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "[aria-label=\"Expand Account and Lists\"]",
+          "label": "Expand Account and Lists",
+          "purpose": "Opens a menu to access account and list settings.",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "#nav-hamburger-menu",
+          "label": "All",
+          "purpose": "Opens a menu to access all Amazon departments.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:08:53.044130"
+    },
+    {
+      "url": "https://amazon.com/ap/signin",
+      "url_pattern": "https://amazon\\.com/ap/signin",
+      "page_type": "other",
+      "title": "",
+      "purpose": "This page is for displaying an error message when a non-functioning page is accessed.",
+      "elements": [],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:09:26.625895"
+    },
+    {
+      "url": "https://amazon.com/cart",
+      "url_pattern": "https://amazon\\.com/cart",
+      "page_type": "cart",
+      "title": "Amazon.com Shopping Cart",
+      "purpose": "This page is for viewing and managing the items in the user's shopping cart.",
+      "elements": [
+        {
+          "element_type": "input",
+          "selector": "#twotabsearchtextbox",
+          "label": "Search Amazon",
+          "purpose": "Allows the user to search for products on Amazon.",
+          "required": false
+        },
+        {
+          "element_type": "input",
+          "selector": "#nav-search-submit-button",
+          "label": "submit",
+          "purpose": "Submits the search query to find products.",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "[aria-label=\"Expand Account and Lists\"]",
+          "label": "Expand Account and Lists",
+          "purpose": "Expands the account and lists menu to access user account information and settings.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:09:42.386980"
+    },
+    {
+      "url": "https://amazon.com/best-sellers",
+      "url_pattern": "https://amazon\\.com/best-sellers",
+      "page_type": "other",
+      "title": "Page Not Found",
+      "purpose": "This page is for displaying an error message when the requested page is not found.",
+      "elements": [
+        {
+          "element_type": "input",
+          "selector": "#e",
+          "label": "Search",
+          "purpose": "Allows users to enter a search query.",
+          "required": false
+        },
+        {
+          "element_type": "input",
+          "selector": "#f",
+          "label": "submit",
+          "purpose": "Submits the search query to retrieve relevant results.",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:10:12.201094"
+    },
+    {
+      "url": "https://amazon.com/deals",
+      "url_pattern": "https://amazon\\.com/deals",
+      "page_type": "listing",
+      "title": "Today's Deals",
+      "purpose": "This page is for displaying today's deals on various products.",
+      "elements": [
+        {
+          "element_type": "button",
+          "selector": "[data-testid=\"filter-bubble-deals-collection-lightning-deals\"]",
+          "label": "Lightning deals",
+          "purpose": "Filter deals to show only lightning deals",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "[data-testid=\"filter-bubble-deals-collection-cml\"]",
+          "label": "Customers' Most-Loved",
+          "purpose": "Filter deals to show only customers' most-loved products",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "#nav-hamburger-menu",
+          "label": "All",
+          "purpose": "Open the navigation menu to access different categories",
+          "required": false
+        },
+        {
+          "element_type": "button",
+          "selector": "[aria-label=\"Expand Account and Lists\"]",
+          "label": "Expand Account and Lists",
+          "purpose": "Open the account and lists menu to access user account information",
+          "required": false
+        }
+      ],
+      "outgoing_urls": [],
+      "requires_auth": false,
+      "discovered_at": "2026-07-23T20:10:31.426722"
+    }
+  ],
+  "edges": [
+    {
+      "from_url_pattern": "^https://amazon.com$",
+      "to_url_pattern": "^https://amazon.com/s\\?k=.*$",
+      "action_type": "submit",
+      "selector": "#nav-search-submit-button",
+      "input_value": null,
+      "description": "Submits a search query to display relevant results.",
+      "wait_for": "#nav-assist-skip-to-filter-sidebar",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://amazon.com$",
+      "to_url_pattern": "^https://amazon.com/s\\?k=.*$",
+      "action_type": "type",
+      "selector": "#twotabsearchtextbox",
+      "input_value": "{query}",
+      "description": "Enters a search query to find specific products.",
+      "wait_for": "#nav-assist-skip-to-filter-sidebar",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://amazon.com$",
+      "to_url_pattern": "^https://amazon.com/cart$",
+      "action_type": "click",
+      "selector": "#nav-cart",
+      "input_value": null,
+      "description": "Navigates to the shopping cart page.",
+      "wait_for": "#sc-active-cart",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://amazon.com/s\\?k=.*$",
+      "to_url_pattern": "^https://amazon.com/cart$",
+      "action_type": "click",
+      "selector": "#add-to-cart-button",
+      "input_value": null,
+      "description": "Adds a product to the shopping cart.",
+      "wait_for": "#sc-active-cart",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://amazon.com$",
+      "to_url_pattern": "^https://amazon.com/deals$",
+      "action_type": "click",
+      "selector": "#nav-xshop",
+      "input_value": null,
+      "description": "Navigates to the deals page.",
+      "wait_for": "#filter-bubble-deals-collection-lightning-deals",
+      "confidence": 0.9
+    },
+    {
+      "from_url_pattern": "^https://amazon.com$",
+      "to_url_pattern": "^https://amazon.com/best-sellers$",
+      "action_type": "click",
+      "selector": "#nav-xshop",
+      "input_value": null,
+      "description": "Navigates to the best sellers page.",
+      "wait_for": "#zg-banner",
+      "confidence": 0.9
+    }
+  ],
+  "flows": [
+    {
+      "flow_name": "search_products",
+      "description": "Searches for products on Amazon.",
+      "steps": [
+        {
+          "from_url_pattern": "^https://amazon.com$",
+          "to_url_pattern": "^https://amazon.com/s\\?k=.*$",
+          "action_type": "type",
+          "selector": "#twotabsearchtextbox",
+          "input_value": "{query}",
+          "description": "Enters a search query to find specific products.",
+          "wait_for": "#nav-assist-skip-to-filter-sidebar",
+          "confidence": 0.9
+        },
+        {
+          "from_url_pattern": "^https://amazon.com$",
+          "to_url_pattern": "^https://amazon.com/s\\?k=.*$",
+          "action_type": "submit",
+          "selector": "#nav-search-submit-button",
+          "input_value": null,
+          "description": "Submits the search query to display relevant results.",
+          "wait_for": "#nav-assist-skip-to-filter-sidebar",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [
+        "query"
+      ],
+      "success_indicator": "#nav-assist-skip-to-filter-sidebar",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "view_cart",
+      "description": "Views the shopping cart.",
+      "steps": [
+        {
+          "from_url_pattern": "^https://amazon.com$",
+          "to_url_pattern": "^https://amazon.com/cart$",
+          "action_type": "click",
+          "selector": "#nav-cart",
+          "input_value": null,
+          "description": "Navigates to the shopping cart page.",
+          "wait_for": "#sc-active-cart",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [],
+      "success_indicator": "#sc-active-cart",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "add_to_cart",
+      "description": "Adds a product to the shopping cart.",
+      "steps": [
+        {
+          "from_url_pattern": "^https://amazon.com/s\\?k=.*$",
+          "to_url_pattern": "^https://amazon.com/cart$",
+          "action_type": "click",
+          "selector": "#add-to-cart-button",
+          "input_value": null,
+          "description": "Adds a product to the shopping cart.",
+          "wait_for": "#sc-active-cart",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [],
+      "success_indicator": "#sc-active-cart",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "view_deals",
+      "description": "Views the deals page.",
+      "steps": [
+        {
+          "from_url_pattern": "^https://amazon.com$",
+          "to_url_pattern": "^https://amazon.com/deals$",
+          "action_type": "click",
+          "selector": "#nav-xshop",
+          "input_value": null,
+          "description": "Navigates to the deals page.",
+          "wait_for": "#filter-bubble-deals-collection-lightning-deals",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [],
+      "success_indicator": "#filter-bubble-deals-collection-lightning-deals",
+      "times_used": 0,
+      "success_rate": 1.0
+    },
+    {
+      "flow_name": "view_best_sellers",
+      "description": "Views the best sellers page.",
+      "steps": [
+        {
+          "from_url_pattern": "^https://amazon.com$",
+          "to_url_pattern": "^https://amazon.com/best-sellers$",
+          "action_type": "click",
+          "selector": "#nav-xshop",
+          "input_value": null,
+          "description": "Navigates to the best sellers page.",
+          "wait_for": "#zg-banner",
+          "confidence": 0.9
+        }
+      ],
+      "variables": [],
+      "success_indicator": "#zg-banner",
+      "times_used": 0,
+      "success_rate": 1.0
+    }
+  ],
+  "pages_explored": 6,
+  "learned_at": "2026-07-23T20:10:35.722333",
+  "updated_at": "2026-07-23T20:10:35.722350",
+  "explorer_version": "1.0"
+}
