@@ -82,6 +82,24 @@ class NavigationFlow(BaseModel):
     times_used: int = 0
     success_rate: float = 1.0
 
+    # ── Auth marking (generic — works for any site) ─────────────────
+    is_auth_flow: bool = Field(
+        False,
+        description="True if this flow's purpose IS authentication itself "
+                    "(logging in or signing up), as opposed to a flow that "
+                    "merely requires the user to already be authenticated."
+    )
+    auth_flow_type: Optional[str] = Field(
+        None,
+        description="'login' or 'signup' — only set when is_auth_flow=True"
+    )
+    requires_auth: bool = Field(
+        False,
+        description="True if this flow needs an authenticated session to "
+                    "succeed. Navigator will auto-login first if credentials "
+                    "are stored for this domain."
+    )
+
 
 class SiteGraph(BaseModel):
     """

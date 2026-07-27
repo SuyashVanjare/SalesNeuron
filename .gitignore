@@ -19,3 +19,27 @@ __pycache__/
 
 # Logs
 *.log
+
+# ===========================
+# SalesNeuron Generated Files
+# ===========================
+
+# Gmail OAuth
+data/gmail_credentials.json
+data/gmail_token.json
+
+# Encryption / Credentials
+data/.credentials_key
+
+# ChromaDB
+data/chromadb/
+
+# Generated Outputs
+data/emails/
+data/pipeline_runs/
+
+# Generated Prospect Profiles
+data/*_profile.json
+
+# Learned Site Graph Backups
+data/site_graphs/*.json

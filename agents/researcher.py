@@ -265,11 +265,23 @@ Return ONLY a JSON array of full URLs:
                     continue
 
                 base_path = path.rstrip("/")
+                base_domain = urlparse(page_url).netloc
+
+                # FIX: removed startswith(base_path) — too strict.
+                # Many sites use /job/123 or /position/engineer
+                # which share the same domain but not the same path prefix.
+                # Instead we accept any same-domain link that:
+                #   (a) is longer than the listing page itself (it's a child)
+                #   (b) contains at least one path segment beyond the base
                 children = [
                     link for link in scraped["links"]
                     if link not in already_planned
-                    and urlparse(link).path.lower().startswith(base_path)
+                    and urlparse(link).netloc == base_domain
                     and len(urlparse(link).path) > len(base_path) + 2
+                    and any(kw in urlparse(link).path.lower() for kw in LISTING_KEYWORDS + [
+                        "detail", "view", "position", "role", "opening",
+                        "description", "apply", "post",
+                    ])
                 ]
 
                 for child in children[:2]:
@@ -399,15 +411,18 @@ Extract all available information and return it as a JSON object matching this s
         LLM reads the profile + raw text and identifies specific buying signals.
         These are what make the cold email hyper-personalized.
         """
-        open_roles = profile.get("open_job_roles", [])
-        roles_summary = ""
-        if open_roles:
-            role_titles = [
-                r["title"] if isinstance(r, dict) else str(r)
-                for r in open_roles[:10]
-            ]
-            roles_summary = f"Open roles ({len(open_roles)} total): " + ", ".join(role_titles)
-
+        open_roles = profile.get("open_job_roles", []) or []
+        role_titles = [
+            str(r) if r and not isinstance(r, dict)
+            else r.get("title", "") if isinstance(r, dict)
+            else ""
+            for r in open_roles
+        ]
+        role_titles = [r for r in role_titles if r]  # remove empty strings
+        roles_summary = f"Open roles ({len(role_titles)} total): " + ", ".join(role_titles) if role_titles else "No hiring data found"
+        # Sanitize profile before passing to f-string
+        profile_clean = {k: v for k, v in profile.items() if v is not None}
+        profile_clean["open_job_roles"] = role_titles
         prompt = f"""
 You are a B2B sales signal analyst. Analyze the company information and identify
 concrete buying signals — specific, observable facts that suggest this company might
@@ -422,7 +437,7 @@ SCRAPED TEXT SUMMARY:
 {combined_text[:5000]}
 
 PROFILE SO FAR:
-{json.dumps(profile, indent=2)[:3000]}
+{json.dumps(profile_clean, indent=2)[:3000]}
 
 Identify up to 6 buying signals. Be VERY SPECIFIC — reference actual facts
 (e.g. "12 open engineering roles including 3 ML positions" not just "hiring").
@@ -502,10 +517,11 @@ Return ONLY the JSON array.
             buying_signals=safe_list(raw.get("buying_signals", []), BuyingSignal),
             tech_stack=safe_list(raw.get("tech_stack", []), TechStack),
             products_services=raw.get("products_services", []),
-            open_job_roles=normalised_roles,
-            hiring_velocity=raw.get("hiring_velocity"),
-            hiring_locations=raw.get("hiring_locations", []),
+            open_job_roles=[
+                r if isinstance(r, str) else r.get("title", str(r))
+                for r in raw.get("open_job_roles", [])
+              ],
             pages_scraped=raw.get("pages_scraped", []),
             research_confidence=raw.get("research_confidence", "low"),
             raw_text_summary=raw.get("raw_text_summary", ""),
-        )
+)

@@ -183,11 +183,15 @@ async def main():
             )
         return
 
-    # ── --forget DOMAIN ────────────────────────────────────────────
-    if args[0] == "--forget":
+    # ── --forget / --delete / --remove DOMAIN ──────────────────────
+    if args[0] in ("--forget", "--delete", "--remove"):
         domain = args[1] if len(args) > 1 else ""
+        domain = domain.replace("https://", "").replace("http://", "").replace("www.", "").rstrip("/")
+        if not domain:
+            console.print("[red]Usage: python run_explorer.py --forget DOMAIN[/red]")
+            return
         await graph_store.delete(domain)
-        console.print(f"[dim]Deleted graph for {domain}[/dim]")
+        console.print(f"[green]🗑️  Deleted learned graph and flows for {domain}[/green]")
         return
 
     # ── Learn a URL ────────────────────────────────────────────────

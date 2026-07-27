@@ -33,8 +33,11 @@ from knowledge.models import (
 
 logger = logging.getLogger(__name__)
 
-# How many pages to explore per site (more = better map, more time)
-MAX_EXPLORE_PAGES = int(__import__("os").getenv("MAX_EXPLORE_PAGES", "6"))
+# How many pages to explore per site.
+# Default raised to 8 so we have budget for:
+#   homepage + 3 section pages + 2 deep job/product pages + 2 extra
+# Override with MAX_EXPLORE_PAGES=12 in .env for richer graphs.
+MAX_EXPLORE_PAGES = int(__import__("os").getenv("MAX_EXPLORE_PAGES", "8"))
 
 
 class SiteExplorer:
@@ -236,11 +239,21 @@ class SiteExplorer:
                 if not section_scraped["success"]:
                     continue
 
+                # FIX: removed startswith(section_path) — too strict.
+                # Use keyword-based matching instead so we catch
+                # /job/123, /position/engineer, /opening/ml-lead
+                # even when they don't share a path prefix with /careers.
+                section_domain = urlparse(section_url).netloc
                 child_links = [
                     link for link in section_scraped.get("links", [])
                     if link not in visited
-                    and urlparse(link).path.lower().startswith(section_path)
+                    and urlparse(link).netloc == section_domain
                     and len(urlparse(link).path) > len(section_path) + 2
+                    and any(kw in urlparse(link).path.lower() for kw in
+                        self._LEAF_INDICATORS + [
+                            "detail", "view", "position", "role",
+                            "description", "apply", "post", "opening",
+                        ])
                 ]
 
                 for child in child_links[:2]:
@@ -635,6 +648,7 @@ class SiteExplorer:
                 return [
                     f"{base_url}/internships",
                     f"{base_url}/jobs",
+                    f"{base_url}/internships/python-developer-internship",
                     f"{base_url}/internships/work-from-home-internships",
                     f"{base_url}/student/login",
                     f"{base_url}/internships/in/computer-science",
