@@ -34,10 +34,12 @@ from knowledge.models import (
 logger = logging.getLogger(__name__)
 
 # How many pages to explore per site.
-# Default raised to 8 so we have budget for:
-#   homepage + 3 section pages + 2 deep job/product pages + 2 extra
-# Override with MAX_EXPLORE_PAGES=12 in .env for richer graphs.
-MAX_EXPLORE_PAGES = int(__import__("os").getenv("MAX_EXPLORE_PAGES", "8"))
+# Raised from 8 to 10: since Phase A now includes every REAL discovered
+# page (not just keyword matches — see _traverse), a normal small-to-mid
+# site with 5-8 real nav pages needs the extra room so pages don't lose
+# a slot race against each other. Override with MAX_EXPLORE_PAGES=15 in
+# .env for large sites you want mapped more thoroughly.
+MAX_EXPLORE_PAGES = int(__import__("os").getenv("MAX_EXPLORE_PAGES", "10"))
 
 
 class SiteExplorer:
@@ -159,16 +161,30 @@ class SiteExplorer:
         self, base_url: str, homepage: dict, browser: BrowserScraper
     ) -> list[str]:
         """
-        Two-phase BFS traversal:
+        Two-phase crawl:
 
-        Phase A — Section discovery:
-          Start from all homepage links. Pick the highest-priority sections
-          (Careers, Products, Team, News, etc.) up to MAX_EXPLORE_PAGES//2.
+        Phase A — Real discovery (redesigned):
+          Every internal link actually found on the homepage is a
+          candidate — not just ones matching _SECTION_KEYWORDS. The
+          keyword list still decides ORDER (Careers/Contact get visited
+          before an obscure footer link) but no longer decides EXCLUSION.
+
+          Why this changed: the old version only kept links matching a
+          fixed keyword list, and fell back to hand-guessed paths
+          (_guess_key_pages) whenever the homepage had few keyword
+          matches. On a real site with pages like "Pay Your Invoice" or
+          "Join Us" that don't match any keyword, those pages were
+          silently never visited — even though the homepage scrape
+          found them just fine. Guessing is now a genuine last resort:
+          it only runs if the homepage returns literally zero links
+          even after the scraper's own thin-content retry.
 
         Phase B — Deep item discovery:
-          For each section page found, scrape it and extract 1-2 sample
-          child pages (individual job descriptions, product detail, etc.).
-          These are the pages that contain actual intel.
+          For section pages that look like listings (jobs, products,
+          blog, etc.), scrape them and extract 1-2 sample child pages
+          (individual job descriptions, product detail, etc.) — this
+          is unchanged from before, it's a different concern (finding
+          items *within* a section) than which sections get visited.
 
         The result is a flat, prioritised list for Phase 3 analysis.
         """
@@ -176,45 +192,51 @@ class SiteExplorer:
         visited: set[str] = {base_url}
         result: list[str] = [base_url]
 
-        # ── Phase A: discover section pages from homepage ──────────────
         homepage_links = homepage.get("links", [])
 
-        # If homepage gave no links, fall back to guessed paths
+        # ── True last resort: only reached if the homepage genuinely
+        # returned zero links (the scraper already retries internally
+        # on thin/JS-rendering content before we ever see this). ────────
         if not homepage_links:
-            logger.info("   No links on homepage, using domain-aware fallback")
+            logger.warning(
+                "   ⚠️  Homepage returned zero links even after scraper "
+                "retries — falling back to guessed common paths (last resort)"
+            )
             for p in self._guess_key_pages(base_url):
                 if len(result) < max_total and p not in visited:
                     result.append(p)
                     visited.add(p)
             return result
 
-        # Sort by priority so highest-value sections come first
+        # ── Phase A: real discovery, budget-limited, keyword-ORDERED ───
+        # Rank every real link by keyword priority (for visiting order),
+        # but include them regardless of whether they matched a keyword.
+        # A small slice of budget is reserved for Phase B's deep-item
+        # drilling so listing pages still get their child pages explored.
         ranked = sorted(
             [l for l in homepage_links if l not in visited],
             key=self._link_priority,
         )
 
-        # Slots: leave half for deep items
-        section_budget = max(1, max_total // 2)
+        deep_reserve = min(2, max(0, max_total - len(result) - 1))
+        section_budget = max_total - len(result) - deep_reserve
+
         sections: list[str] = []
         for link in ranked:
             if len(sections) >= section_budget:
                 break
-            # Only take links that match at least one section keyword
-            if self._link_priority(link) < len(self._SECTION_KEYWORDS):
-                sections.append(link)
-                visited.add(link)
-
-        # If we didn't find enough section pages, fill with top-ranked links
-        for link in ranked:
-            if len(sections) >= section_budget:
-                break
-            if link not in visited:
-                sections.append(link)
-                visited.add(link)
+            sections.append(link)
+            visited.add(link)
 
         result.extend(sections)
-        logger.info(f"   Phase A: {len(sections)} section pages selected")
+        keyword_matched = sum(
+            1 for s in sections if self._link_priority(s) < len(self._SECTION_KEYWORDS)
+        )
+        logger.info(
+            f"   Phase A: {len(sections)} real pages discovered from homepage nav "
+            f"({keyword_matched} keyword-matched, {len(sections) - keyword_matched} "
+            f"other real pages, budget={section_budget})"
+        )
 
         # ── Phase B: deep item discovery ──────────────────────────
         # For each section page, scrape it and extract 1-2 child URLs.

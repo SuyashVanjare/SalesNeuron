@@ -24,6 +24,7 @@ from core.llm import llm
 from core.scraper import BrowserScraper
 from core.models import ProspectProfile, BuyingSignal, FundingRound, KeyPerson, TechStack
 from core.memory import memory
+from core.linkedin_finder import linkedin_finder
 from knowledge.graph_store import graph_store
 
 logger = logging.getLogger(__name__)
@@ -91,9 +92,25 @@ class ResearcherAgent:
 
             # ── Step 2: SCRAPE ──────────────────────────────────────────
             logger.info("🌐 Step 2/4 — Scraping pages...")
-            scraped_pages = await scraper.scrape_multiple(pages_to_scrape)
+            try:
+                scraped_pages = await scraper.scrape_multiple(pages_to_scrape)
+            except Exception as e:
+                # Browser crash (e.g. "Connection closed while reading from driver")
+                # — don't kill the pipeline. Work with whatever we have.
+                logger.warning(
+                    f"  💥 Browser session crashed mid-scrape: {e}\n"
+                    f"  ⚠️  Continuing with any pages already scraped..."
+                )
+                scraped_pages = []
+
             successful = [p for p in scraped_pages if p["success"]]
             logger.info(f"   {len(successful)}/{len(scraped_pages)} pages scraped successfully")
+
+            if not successful:
+                logger.warning(
+                    "   ⚠️  No pages scraped successfully — this site may block "
+                    "all automated access. Building minimal profile from URL only."
+                )
 
             # ── Step 3: EXTRACT ─────────────────────────────────────────
             logger.info("🧠 Step 3/4 — LLM extracting structured data...")
@@ -112,6 +129,37 @@ class ResearcherAgent:
         logger.info(f"✅ Research complete — confidence: {profile.research_confidence}")
         logger.info(f"   Buying signals: {len(profile.buying_signals)} detected")
         logger.info(f"   Open roles found: {len(profile.open_job_roles)}")
+
+        # ── LinkedIn fallback: website had no findable people ──────────
+        # A ProspectProfile with zero key_people can't be personalized to
+        # a real contact downstream — EmailFinder needs a person, not just
+        # a company name. Try LinkedIn before giving up on a real contact.
+        if not profile.key_people:
+            logger.info(
+                "👤 No key people found on website — trying LinkedIn finder..."
+            )
+            try:
+                li_people = await linkedin_finder.find_people(
+                    company_name=profile.company_name,
+                    domain=urlparse(profile.website).netloc,
+                )
+                if li_people:
+                    profile.key_people = [
+                        KeyPerson(
+                            name=p["name"],
+                            title=p.get("title", ""),
+                            linkedin_url=p.get("linkedin_url"),
+                        )
+                        for p in li_people
+                    ]
+                    logger.info(
+                        f"👤 LinkedIn finder added {len(li_people)} people "
+                        f"(source: {li_people[0].get('source', 'unknown')})"
+                    )
+                else:
+                    logger.info("👤 LinkedIn finder found no people either")
+            except Exception as e:
+                logger.warning(f"👤 LinkedIn finder failed (non-fatal): {e}")
 
         # ── Persist to memory (prospect cache) ────────────────────────
         await memory.save(profile)
@@ -192,6 +240,7 @@ RULES:
 - Pick the MOST SPECIFIC URL per category (e.g. /careers over /)
 - Do NOT pick two URLs from the same category
 - If a jobs/careers page exists, it MUST be included
+- If a team/leadership/founders page exists, it MUST be included — we need real people's names to personalize outreach
 - Exclude legal, cookie, support, and help pages
 
 Return ONLY a JSON array of full URLs:
@@ -298,18 +347,25 @@ Return ONLY a JSON array of full URLs:
         """
         Fallback: guess common paths when LLM link planning fails.
         Covers all key categories: hiring, company, product, news.
+
+        Team/leadership paths are listed FIRST — real people's names are
+        essential for contact selection downstream (EmailFinder needs a
+        person, not just a company name). Includes common variants
+        (e.g. /about/leadership, /about/team) generically — not tied to
+        any specific company's site structure.
         """
         paths = [
+            # Company / leadership (highest priority — we need real names)
+            "/about/leadership", "/about/team", "/company/team",
+            "/about-us/team", "/team", "/leadership", "/founders", "/about",
             # Hiring
             "/jobs", "/careers", "/hiring", "/internships", "/openings",
-            # Company
-            "/about", "/team", "/leadership", "/founders",
             # Product & commercial
             "/product", "/products", "/features", "/solutions", "/pricing", "/plans",
             # Social proof
             "/customers", "/case-studies", "/success-stories",
             # News
-            "/news", "/press", "/blog",
+            "/newsroom", "/news", "/press", "/blog",
         ]
         return [f"{base_url}{p}" for p in paths]
 
@@ -484,7 +540,33 @@ Return ONLY the JSON array.
         """
         Convert the raw LLM dict into a validated ProspectProfile.
         Handles missing fields and both old (list[str]) and new (list[dict]) formats.
+
+        IMPORTANT — why _safe_str exists:
+          raw.get("company_name", "Unknown") only falls back to "Unknown"
+          when the KEY IS ABSENT. It does NOT catch the key being present
+          with value None, or being present with the wrong type (a list,
+          a dict, a number). On a near-empty/thin-content page (e.g. a
+          site that returns almost no scraped text), the LLM often
+          legitimately returns `"company_name": null` rather than
+          omitting the key — and .get() lets that None straight through
+          to Pydantic, which then rejects it with "Input should be a
+          valid string". This was the exact cause of the
+          consciousengines.com crash: company_name, industry, and
+          description all came back None from the same thin-content
+          extraction, and all three failed validation simultaneously.
         """
+        def _safe_str(value, default: str) -> str:
+            """Coerce any LLM output to a usable string, or fall back."""
+            if isinstance(value, str) and value.strip():
+                return value
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                return str(value)
+            if isinstance(value, list) and value:
+                # LLM sometimes wraps a single value in a list
+                first = value[0]
+                return str(first) if first else default
+            return default
+
         def safe_list(data, model_cls):
             result = []
             for item in (data or []):
@@ -503,25 +585,33 @@ Return ONLY the JSON array.
             elif isinstance(r, str):
                 normalised_roles.append({"title": r})
 
+        domain_fallback = urlparse(raw.get("website", "") or "").netloc \
+            .replace("www.", "").split(".")[0].title() or "Unknown"
+
         return ProspectProfile(
-            company_name=raw.get("company_name", "Unknown"),
-            website=raw.get("website", ""),
-            industry=raw.get("industry", "Unknown"),
-            company_size=raw.get("company_size"),
-            founded_year=raw.get("founded_year"),
-            headquarters=raw.get("headquarters"),
-            description=raw.get("description", ""),
+            company_name=_safe_str(raw.get("company_name"), domain_fallback),
+            website=raw.get("website") or "",
+            industry=_safe_str(raw.get("industry"), "Unknown"),
+            company_size=raw.get("company_size") if isinstance(raw.get("company_size"), str) else None,
+            founded_year=raw.get("founded_year") if isinstance(raw.get("founded_year"), str) else None,
+            headquarters=raw.get("headquarters") if isinstance(raw.get("headquarters"), str) else None,
+            description=_safe_str(
+                raw.get("description"),
+                f"Company at {raw.get('website') or 'unknown URL'}. "
+                f"Limited data available — site returned little content."
+            ),
             key_people=safe_list(raw.get("key_people", []), KeyPerson),
-            recent_news=raw.get("recent_news", []),
+            recent_news=raw.get("recent_news", []) if isinstance(raw.get("recent_news"), list) else [],
             funding_history=safe_list(raw.get("funding_history", []), FundingRound),
             buying_signals=safe_list(raw.get("buying_signals", []), BuyingSignal),
             tech_stack=safe_list(raw.get("tech_stack", []), TechStack),
-            products_services=raw.get("products_services", []),
+            products_services=raw.get("products_services", []) if isinstance(raw.get("products_services"), list) else [],
             open_job_roles=[
                 r if isinstance(r, str) else r.get("title", str(r))
                 for r in raw.get("open_job_roles", [])
-              ],
-            pages_scraped=raw.get("pages_scraped", []),
-            research_confidence=raw.get("research_confidence", "low"),
-            raw_text_summary=raw.get("raw_text_summary", ""),
-)
+                if isinstance(r, (str, dict))
+            ],
+            pages_scraped=raw.get("pages_scraped", []) if isinstance(raw.get("pages_scraped"), list) else [],
+            research_confidence=_safe_str(raw.get("research_confidence"), "low"),
+            raw_text_summary=_safe_str(raw.get("raw_text_summary"), ""),
+        )

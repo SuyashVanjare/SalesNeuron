@@ -150,7 +150,7 @@ class PersonalizerAgent:
         Priority: CEO/Founder > VP Sales > Head of Growth > CTO > first available.
         """
         if not profile.key_people:
-            return {"name": "there", "title": ""}
+            return {"name": "there", "first": "there", "title": ""}
 
         priority_titles = [
             "ceo", "founder", "co-founder", "president",
@@ -165,7 +165,8 @@ class PersonalizerAgent:
                 name = person.name if hasattr(person, "name") else person.get("name", "")
                 if priority in title and name:
                     return {
-                        "name": name.split()[0],  # first name only
+                        "name": name,          # full name for email finder
+                        "first": name.split()[0],  # first name for greeting
                         "title": person.title if hasattr(person, "title") else person.get("title", ""),
                     }
 
@@ -173,7 +174,11 @@ class PersonalizerAgent:
         first = profile.key_people[0]
         name = first.name if hasattr(first, "name") else first.get("name", "there")
         title = first.title if hasattr(first, "title") else first.get("title", "")
-        return {"name": name.split()[0], "title": title}
+        return {
+            "name": name,
+            "first": name.split()[0] if name != "there" else "there",
+            "title": title,
+        }
 
     # ──────────────────────────────────────────────────────────────
     # Step 3 — Generate the email
@@ -210,28 +215,35 @@ class PersonalizerAgent:
         signal_type = best_signal.get("signal_type", "general")
         signal_desc = best_signal.get("description", "")
         signal_strength = best_signal.get("strength", "low")
+        signal_hook = signal_desc.split(".")[0][:100]
 
         prompt = (
             "You are an expert B2B cold email writer. Write a hyper-personalized cold email.\n\n"
             "RULES:\n"
             "- Under 150 words total (people skim emails)\n"
-            "- First line MUST reference the specific buying signal below — a real fact\n"
-            "- Second paragraph connects their situation to ONE specific product benefit\n"
-            "- End with the CTA provided\n"
+            "- MUST have exactly 3 separate paragraphs separated by blank lines:\n"
+            "  Paragraph 1: Greeting + specific buying signal reference (1-2 sentences)\n"
+            "  Paragraph 2: How SalesNeuron specifically helps THIS company type (2-3 sentences)\n"
+            "  Paragraph 3: CTA only (1 sentence)\n"
+            "- Signature on its own line after a blank line: Best,\\n\\n{sender_name}\\n{sender_role}\n"
+            "- If the company sells to businesses, focus on how we help THEIR sales team\n"
+            "- If the company is a startup/early stage, focus on founder time saved\n"
+            "- If the company is expanding, focus on scaling outreach without hiring\n"
             "- NO generic opener like 'I hope this finds you well'\n"
-            "- NO fluff, NO buzzwords\n"
+            "- NO fluff, NO buzzwords, NO 'I wanted to reach out'\n"
             "- Sound like a human, not a robot\n"
-            "- Use first name only in greeting\n\n"
+            "- Use first name only in greeting (if name is 'there', write 'Hi,' with no name)\n\n"
             "PROSPECT:\n"
             f"  Company: {profile.company_name}\n"
             f"  Industry: {profile.industry}\n"
             f"  Description: {profile.description}\n"
-            f"  Contact: {contact['name']} ({contact['title']})\n\n"
+            f"  Contact full name: {contact['name']} ({contact['title']})\n"
+            f"  Use first name only in greeting: {contact['name'].split()[0] if contact['name'] != 'there' else ''}\n\n"
             "BUYING SIGNAL TO HOOK ON:\n"
             f"  Type: {signal_type}\n"
             f"  Detail: {signal_desc}\n"
             f"  Strength: {signal_strength}\n\n"
-            "RELEVANT PRODUCT KNOWLEDGE (use this to match their pain to your solution):\n"
+            "RELEVANT PRODUCT KNOWLEDGE (adapt to their specific situation, don't just copy):\n"
             f"{rag_context}\n\n"
             "SENDER:\n"
             f"  Name: {sender_name}\n"
@@ -239,9 +251,9 @@ class PersonalizerAgent:
             f"CTA: {cta}\n\n"
             "Return ONLY a JSON object:\n"
             "{\n"
-            '  "subject": "email subject line (under 8 words, specific, no clickbait)",\n'
-            '  "body": "full email body with greeting and signature",\n'
-            '  "product_angle": "which product feature/benefit you matched to this prospect",\n'
+            '  "subject": "email subject line (under 8 words, specific, references actual company event)",\n'
+            '  "body": "MUST have blank lines between paragraphs. Format:\\nHi [Name],\\n\\n[paragraph 1]\\n\\n[paragraph 2]\\n\\n[CTA sentence]\\n\\nBest,\\n\\n[sender name]\\n[sender role]",\n'
+            '  "product_angle": "one sentence: how you specifically positioned SalesNeuron for this company",\n'
             '  "personalization_score": "high/medium/low"\n'
             "}\n"
             "No markdown, pure JSON only."
@@ -254,8 +266,7 @@ class PersonalizerAgent:
                 company_name=profile.company_name,
                 website=profile.website,
                 contact_name=contact["name"] if contact["name"] != "there" else None,
-                contact_title=contact.get("title"),
-                subject=result.get("subject", f"Quick question about {profile.company_name}"),
+                contact_title=contact.get("title"),                subject=result.get("subject", f"Quick question about {profile.company_name}"),
                 body=result.get("body", ""),
                 buying_signal_used=f"{signal_type}: {signal_desc}",
                 product_angle=result.get("product_angle", ""),

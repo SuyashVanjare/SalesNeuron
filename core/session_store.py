@@ -58,6 +58,31 @@ class SessionStore:
         await context.storage_state(path=str(path))
         logger.info(f"🍪 Session saved for {domain} → {path}")
 
+    async def load(self, domain: str) -> Optional[list[dict]]:
+        """
+        Load saved cookies for a domain as a list of Playwright-format
+        cookie dicts ({name, value, domain, path, ...}) — the same shape
+        found under storage_state()["cookies"]. Returns None if there's
+        no saved session or it's gone stale (see SESSION_MAX_AGE_HOURS).
+
+        Used by anything that wants raw cookies without a full Playwright
+        context — e.g. injecting into a curl-cffi session for LinkedIn.
+        """
+        if not self.is_fresh(domain):
+            return None
+        path = self.path_for(domain)
+        try:
+            import json
+            data = json.loads(path.read_text())
+            cookies = data.get("cookies", [])
+            if not cookies:
+                logger.debug(f"🍪 Session file for {domain} has no cookies")
+                return None
+            return cookies
+        except Exception as e:
+            logger.warning(f"🍪 Failed to load session for {domain}: {e}")
+            return None
+
     def clear(self, domain: str) -> None:
         path = self.path_for(domain)
         if path.exists():

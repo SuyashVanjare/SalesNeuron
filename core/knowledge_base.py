@@ -184,6 +184,22 @@ PRODUCT_KNOWLEDGE = [
             "for a team of 5."
         ),
     },
+    # Add these chunks to PRODUCT_KNOWLEDGE:
+    {
+        "title": "Use Case: Hardware/Robotics Companies",
+        "content": "Robotics and hardware companies sell to data centers, "
+        "manufacturers, and facilities operators — all of whom have very "
+        "specific buying triggers (infrastructure expansion, facility "
+        "upgrades, new deployments). SalesNeuron scans live web signals "
+        "to find these exact moments..."
+    },
+    {
+        "title": "Use Case: Blockchain/Web3 Consulting",
+        "content": "Web3 consulting firms win clients when companies are "
+        "actively exploring blockchain adoption. SalesNeuron detects "
+        "tech migration signals — companies mentioning legacy system "
+        "limitations or digital transformation initiatives..."
+    }
 ]
 
 

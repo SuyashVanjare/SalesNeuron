@@ -31,6 +31,7 @@ Usage:
     print(result["source"])      # "pattern" / "hunter" / "cache" / etc.
 """
 
+import asyncio
 import logging
 import os
 import re
@@ -547,17 +548,52 @@ class EmailFinder:
         self, domain: str, scraper
     ) -> list[str]:
         """
-        Crawl company team/contact/about pages and extract any email addresses
-        found in the page text. These seed the pattern inference.
+        Crawl company contact/team/about pages and extract any email
+        addresses found in the page text. These seed the pattern
+        inference.
+
+        Uses the REAL pages Explorer already discovered for this domain
+        (via SiteGraph) instead of guessing static paths — a guessed
+        "/contact" misses "/contact/" (trailing slash) or "/get-in-touch"
+        or any other real-but-unconventional URL. Falls back to guessed
+        paths only if no SiteGraph exists yet for this domain (e.g. this
+        is the very first time we're seeing it, before Explorer has run).
         """
-        pages = [
-            f"https://{domain}/team",
-            f"https://{domain}/about",
-            f"https://{domain}/contact",
-            f"https://{domain}/leadership",
-            f"https://{domain}/about-us",
-            f"https://{domain}/people",
-        ]
+        pages: list[str] = []
+
+        try:
+            from knowledge.graph_store import graph_store
+            await graph_store.init()
+            site_graph = await graph_store.get(domain)
+            if site_graph and site_graph.pages:
+                # Prioritize pages Explorer classified as contact/about/team-like
+                _CONTACT_KEYWORDS = [
+                    "contact", "team", "about", "leadership", "people", "founder",
+                ]
+                for page_node in site_graph.pages:
+                    url_lower = page_node.url.lower()
+                    type_lower = (page_node.page_type or "").lower()
+                    if any(kw in url_lower or kw in type_lower for kw in _CONTACT_KEYWORDS):
+                        pages.append(page_node.url)
+                if pages:
+                    logger.debug(
+                        f"📧 Using {len(pages)} real page(s) from SiteGraph "
+                        f"for {domain} instead of guessed paths"
+                    )
+        except Exception as e:
+            logger.debug(f"📧 Could not load SiteGraph for {domain}: {e}")
+
+        # Fallback — no SiteGraph yet, guess common paths
+        if not pages:
+            pages = [
+                f"https://{domain}/contact",
+                f"https://{domain}/team",
+                f"https://{domain}/about",
+                f"https://{domain}/leadership",
+                f"https://{domain}/about-us",
+                f"https://{domain}/people",
+            ]
+
         email_re = re.compile(
             r"[a-zA-Z0-9._%+\-]+@" + re.escape(domain), re.IGNORECASE
         )
@@ -839,6 +875,79 @@ class EmailFinder:
                 (delta, datetime.now().isoformat(), domain),
             )
             await db.commit()
+
+
+    async def find_by_domain(self, domain: str, scraper=None):
+        """
+        Find a real email for a domain WITHOUT needing a person name.
+
+        Strategy (all free, no Hunter needed):
+        1. WHOIS         - registrant email often uses company domain
+        2. GitHub org    - engineer/founder emails from commits
+        3. Site scrape   - emails visible on about/contact/team pages
+        4. Pattern guess - generate common role emails + DNS verify
+           e.g. hello@, founders@, contact@, info@, ceo@
+        """
+        self._ensure_ready()
+        domain = domain.replace("www.", "").split("/")[0]
+        logger.info(f"📧 Domain engine: finding email for {domain} (no person name)")
+
+        # 1. WHOIS
+        whois_emails = await self._emails_from_whois(domain)
+        if whois_emails:
+            logger.info(f"📧 WHOIS found: {whois_emails[0]}")
+            return {"email": whois_emails[0], "confidence": 0.70, "source": "whois", "verified": True, "contact_name": None, "contact_title": None}
+
+        # 2. GitHub
+        github_emails = await self._emails_from_github(domain)
+        if github_emails:
+            logger.info(f"📧 GitHub found: {github_emails[0]}")
+            return {"email": github_emails[0], "confidence": 0.75, "source": "github", "verified": True, "contact_name": None, "contact_title": None}
+
+        # 3. Site scrape
+        if scraper:
+            site_emails = await self._scrape_emails_from_site(domain, scraper)
+            if site_emails:
+                logger.info(f"📧 Site scrape found: {site_emails[0]}")
+                return {"email": site_emails[0], "confidence": 0.80, "source": "site_scrape", "verified": True, "contact_name": None, "contact_title": None}
+
+        # 4. Role email + DNS verify (our own engine, zero paid API)
+        # Order matters — most common contact emails first by company type
+        role_emails = [
+            f"info@{domain}",       # most common for consulting/service firms
+            f"contact@{domain}",    # second most common
+            f"hello@{domain}",      # common for tech startups
+            f"founders@{domain}",
+            f"hi@{domain}",
+            f"team@{domain}",
+            f"ceo@{domain}",
+            f"founder@{domain}",
+        ]
+        from core.verifier import verifier
+        for candidate in role_emails:
+            try:
+                result = await verifier.verify(candidate)
+                status = result.get("status") if result else None
+                if status == "valid":
+                    logger.info(f"📧 Role email verified: {candidate}")
+                    return {"email": candidate, "confidence": 0.72, "source": "role_pattern_verified", "verified": True, "contact_name": None, "contact_title": candidate.split("@")[0].title()}
+            except Exception:
+                continue
+
+        logger.info(f"📧 Domain engine: role emails unverifiable — falling back to best guess")
+
+        # 5. Best-guess fallback — use info@ for service/consulting companies
+        # info@ is more likely to be monitored than hello@ for B2B firms
+        best_guess = f"info@{domain}"
+        logger.info(f"📧 Best guess (unverified): {best_guess}")
+        return {
+            "email": best_guess,
+            "confidence": 0.50,
+            "source": "best_guess_domain",
+            "verified": False,
+            "contact_name": None,
+            "contact_title": None,
+        }
 
     def _empty_result(self, person_id: int, reason: str) -> dict:
         logger.info(f"📧 No result: {reason}")

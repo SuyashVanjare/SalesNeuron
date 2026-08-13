@@ -118,6 +118,82 @@ class ProviderWaterfall:
     # Public API
     # ──────────────────────────────────────────────────────────────
 
+    async def domain_search(self, domain: str) -> Optional[dict]:
+        """
+        Find ANY verified email for a domain without needing a person name.
+        Uses Hunter's domain-search endpoint which returns real emails
+        it has on file for that domain. Falls back to Snov domain search.
+
+        Used when the Researcher couldn't find key people names from scraping
+        (e.g. JS-rendered leadership pages), so we get at least one real
+        email to send to rather than giving up entirely.
+
+        Returns the highest-confidence email found, prioritizing:
+          CEO/Founder/CTO > VP > Director > any verified email
+        """
+        self._ensure_ready()
+        logger.info(f"💳 Domain search for {domain} (no person name available)")
+        domain = domain.replace("www.", "")
+        # ── Hunter domain search ───────────────────────────────────
+        if HUNTER_API_KEY:
+            try:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.get(
+                        "https://api.hunter.io/v2/domain-search",
+                        params={
+                            "domain": domain,
+                            "api_key": HUNTER_API_KEY,
+                            "limit": 10,
+                            "type": "personal",
+                        },
+                    )
+                    resp.raise_for_status()
+                    data = resp.json().get("data", {})
+                    emails = data.get("emails", [])
+
+                if emails:
+                    # Prioritize by seniority
+                    priority_titles = [
+                        "ceo", "founder", "co-founder", "cto", "coo",
+                        "president", "vp", "vice president", "director", "head"
+                    ]
+                    best = None
+                    for title in priority_titles:
+                        for e in emails:
+                            pos = (e.get("position") or "").lower()
+                            if title in pos and e.get("value"):
+                                best = e
+                                break
+                        if best:
+                            break
+
+                    # Fall back to first verified email
+                    if not best:
+                        verified = [e for e in emails if e.get("verification", {}).get("status") == "valid"]
+                        best = verified[0] if verified else emails[0]
+
+                    email = best.get("value")
+                    first = best.get("first_name", "")
+                    last = best.get("last_name", "")
+                    position = best.get("position", "")
+                    confidence = (best.get("confidence", 0) or 0) / 100
+
+                    if email:
+                        logger.info(f"💳 Hunter domain search found: {email} ({position})")
+                        return {
+                            "email": email,
+                            "confidence": confidence,
+                            "provider": "hunter_domain",
+                            "verified": best.get("verification", {}).get("status") == "valid",
+                            "contact_name": f"{first} {last}".strip() or None,
+                            "contact_title": position or None,
+                        }
+            except Exception as e:
+                logger.warning(f"💳 Hunter domain search failed: {e}")
+
+        logger.info(f"💳 Domain search exhausted for {domain}")
+        return None
+
     async def find(
         self,
         first_name: str,

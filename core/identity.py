@@ -139,7 +139,20 @@ class IdentityResolver:
         clean_company = (company or "").strip()
 
         if not clean_name:
-            raise ValueError(f"Could not normalize name from input: {name!r}")
+            logger.warning(f"🪪  Could not normalize name from input: {name!r} — skipping resolution")
+            domain = self._extract_domain(website or "")
+            parts = name.strip().split()
+            return {
+                "person_id": None,
+                "full_name": name,
+                "first_name": parts[0] if parts else "",
+                "last_name": parts[-1] if len(parts) > 1 else "",
+                "domain": domain,
+                "company_name": company or "",
+                "title": title or "",
+                "linkedin_url": "",
+                "employment_verified": False,
+            }
 
         first, last = self._split_name(clean_name)
 

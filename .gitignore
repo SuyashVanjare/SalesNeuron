@@ -43,3 +43,39 @@ data/*_profile.json
 
 # Learned Site Graph Backups
 data/site_graphs/*.json
+
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Environment variables
+.env
+
+# Database
+*.db
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Secrets / credentials
+data/.credentials_key
+data/gmail_credentials.json
+data/gmail_token.json
+
+# Local generated data
+data/chromadb/
+data/emails/
+data/pipeline_runs/
+
+# Generated profiles / local data
+data/*_profile.json
+data/site_graphs/*.json
