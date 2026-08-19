@@ -57,6 +57,13 @@ _FREE_QUOTAS = {
     "apollo": int(os.getenv("APOLLO_QUOTA", "50")),
 }
 
+# Auto-skip a provider once it's failed this many times in a row with
+# ZERO successes ever recorded — this is what a permanently-403'd
+# provider (wrong plan tier, revoked key) looks like. A provider that's
+# succeeded before but is having a rough patch is NOT auto-skipped —
+# only one that has never once worked. Set to 0 to disable auto-skip.
+AUTO_SKIP_AFTER_FAILURES = int(os.getenv("PROVIDER_AUTO_SKIP_AFTER", "3"))
+
 
 class ProviderWaterfall:
     """
@@ -245,7 +252,8 @@ class ProviderWaterfall:
         return None
 
     async def quota_status(self) -> list[dict]:
-        """Show remaining quota for each provider."""
+        """Show remaining quota for each provider, and whether it's
+        been auto-skipped due to never succeeding."""
         self._ensure_ready()
         async with aiosqlite.connect(self._db_path) as db:
             db.row_factory = aiosqlite.Row
@@ -253,11 +261,28 @@ class ProviderWaterfall:
                 "SELECT * FROM provider_quota ORDER BY provider"
             ) as cur:
                 rows = await cur.fetchall()
-        result = []
-        for row in rows:
-            d = dict(row)
-            d["calls_remaining"] = d["monthly_limit"] - d["calls_used"]
-            result.append(d)
+
+            result = []
+            for row in rows:
+                d = dict(row)
+                d["calls_remaining"] = d["monthly_limit"] - d["calls_used"]
+
+                async with db.execute(
+                    """SELECT COUNT(*) as total, SUM(success) as successes
+                       FROM provider_history WHERE provider=?""",
+                    (d["provider"],),
+                ) as cur2:
+                    hist = await cur2.fetchone()
+                total_calls = hist["total"] or 0
+                total_successes = hist["successes"] or 0
+                d["auto_skipped"] = (
+                    AUTO_SKIP_AFTER_FAILURES > 0
+                    and total_calls >= AUTO_SKIP_AFTER_FAILURES
+                    and total_successes == 0
+                )
+                d["total_calls"] = total_calls
+                d["total_successes"] = total_successes
+                result.append(d)
         return result
 
     # ──────────────────────────────────────────────────────────────
@@ -440,6 +465,34 @@ class ProviderWaterfall:
 
                 if remaining <= 0:
                     continue
+
+                # Auto-skip check — this is the fix for Apollo (or any
+                # provider) sitting on a plan tier that doesn't include
+                # the endpoint we call, which manifests as a permanent
+                # 403 on every single attempt. Without this, every
+                # lookup still pays the network round-trip and log
+                # noise for a call that will never succeed. Only
+                # triggers when a provider has NEVER once succeeded —
+                # a provider with any past success just gets its normal
+                # success-rate ranking below, not skipped.
+                if AUTO_SKIP_AFTER_FAILURES > 0:
+                    async with db.execute(
+                        """SELECT COUNT(*) as total, SUM(success) as successes
+                           FROM provider_history WHERE provider=?""",
+                        (p,),
+                    ) as cur:
+                        hist_row = await cur.fetchone()
+                    total_calls = hist_row["total"] or 0
+                    total_successes = hist_row["successes"] or 0
+                    if (
+                        total_calls >= AUTO_SKIP_AFTER_FAILURES
+                        and total_successes == 0
+                    ):
+                        logger.debug(
+                            f"💳 Auto-skipping {p} — {total_calls} attempts, "
+                            f"0 successes ever (likely wrong plan tier or bad key)"
+                        )
+                        continue
 
                 # Historical success rate for this domain type
                 async with db.execute(

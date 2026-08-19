@@ -190,8 +190,29 @@ class EmailFinder:
             return cached
 
         # ── Step 3: Pattern Discovery ─────────────────────────────
-        pattern = await self._get_or_discover_pattern(domain, scraper)
+        pattern, discovered_emails = await self._get_or_discover_pattern(domain, scraper)
         logger.info(f"📧 Pattern for {domain}: {pattern or 'unknown'}")
+
+        # ── Step 3.5: Direct name match against discovered emails ──
+        # Before guessing a pattern-based candidate, check whether any
+        # email we already found (via WHOIS/GitHub/site scrape) is
+        # literally this specific person's address. This connects a
+        # name found by LinkedIn/researcher to an email sitting
+        # unrelated on the same site — previously these were two
+        # separate facts that never got cross-referenced.
+        if discovered_emails:
+            direct_match = self._match_name_to_emails(first, last, discovered_emails)
+            if direct_match:
+                logger.info(
+                    f"📧 Direct match: {direct_match} appears to belong to "
+                    f"{name} (found via site scrape/WHOIS/GitHub)"
+                )
+                result = await self._verify_and_save(
+                    person_id, direct_match, 0.90,
+                    pattern, "site_scrape_direct_match"
+                )
+                if result["verification_status"] in ("valid", "risky"):
+                    return result
 
         # ── Step 4: Candidate Generation ──────────────────────────
         candidates = self._generate_candidates(first, last, domain, pattern)
@@ -348,16 +369,27 @@ class EmailFinder:
 
     async def _get_or_discover_pattern(
         self, domain: str, scraper=None
-    ) -> Optional[str]:
+    ) -> tuple:
         """
-        Return known pattern from DB, or discover it by:
+        Return (known/discovered pattern, raw discovered emails list).
+
+        The raw emails list is exposed (not just the inferred pattern)
+        because pattern inference needs 2+ emails, but sometimes we only
+        find ONE — and that one might be a DIRECT hit for the specific
+        person we're looking up (e.g. site scrape finds
+        "pe.lallemant@gojiberry.ai" while researching "P-E Lallemant").
+        Previously that single email was found, then thrown away the
+        instant `len(discovered_emails) < 2`, even when it was exactly
+        the answer we needed. See find()'s new Step 2.5 for how this
+        gets used.
+
         1. Scraping the company's team/about pages for email addresses
         2. Inferring the pattern from 2+ discovered emails
         3. Saving it permanently
         """
         known = await self.lookup_pattern(domain)
         if known:
-            return known
+            return known, []
 
         discovered_emails: list[str] = []
 
@@ -386,7 +418,7 @@ class EmailFinder:
         ))
 
         if len(discovered_emails) < 2:
-            return None
+            return None, discovered_emails
 
         pattern = self._infer_pattern(discovered_emails, domain)
         if pattern:
@@ -395,7 +427,49 @@ class EmailFinder:
                 f"📧 Pattern discovered for {domain}: {pattern} "
                 f"(from {len(discovered_emails)} emails)"
             )
-        return pattern
+        return pattern, discovered_emails
+
+    def _match_name_to_emails(
+        self, first: str, last: str, emails: list[str]
+    ) -> Optional[str]:
+        """
+        Check if any scraped/discovered email directly belongs to this
+        specific person, by matching name fragments against the email's
+        local part (before the @). Handles common formats: first.last,
+        firstlast, f.last, flast, first_last, last.first.
+
+        This is what connects "LinkedIn found the name P-E Lallemant" to
+        "the site's contact page happened to list pe.lallemant@domain" —
+        two facts that were previously never cross-referenced at all.
+
+        Returns the matching email, or None.
+        """
+        first = re.sub(r"[^a-z]", "", first.lower())
+        last = re.sub(r"[^a-z]", "", last.lower())
+        if not first or not last:
+            return None
+
+        for email in emails:
+            local = email.split("@")[0].lower()
+            local_clean = re.sub(r"[^a-z]", "", local)
+
+            checks = [
+                first + last, last + first,
+                first[:1] + last, last + first[:1],
+                first, last,  # single-name local parts (e.g. just "pe@")
+            ]
+            for pattern in checks:
+                if pattern and pattern == local_clean:
+                    return email
+
+            # Also allow the un-stripped local part to CONTAIN both
+            # name fragments (handles first.last, first_last, etc. —
+            # separators are already gone from local_clean, but this
+            # catches partial/abbreviated forms like "p.lallemant")
+            if first[:1] in local_clean and last in local_clean:
+                return email
+
+        return None
 
     async def _emails_from_whois(self, domain: str) -> list[str]:
         """
@@ -405,7 +479,7 @@ class EmailFinder:
         """
         try:
             import whois as whois_lib
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             data = await loop.run_in_executor(None, whois_lib.whois, domain)
 
             emails = []

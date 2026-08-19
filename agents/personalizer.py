@@ -241,7 +241,8 @@ class PersonalizerAgent:
             f"  Use first name only in greeting: {contact['name'].split()[0] if contact['name'] != 'there' else ''}\n\n"
             "BUYING SIGNAL TO HOOK ON:\n"
             f"  Type: {signal_type}\n"
-            f"  Detail: {signal_desc}\n"
+            f"  Hook (use this in first line — keep it short): {signal_hook}\n"
+            f"  Full context: {signal_desc}\n"
             f"  Strength: {signal_strength}\n\n"
             "RELEVANT PRODUCT KNOWLEDGE (adapt to their specific situation, don't just copy):\n"
             f"{rag_context}\n\n"
@@ -299,7 +300,7 @@ class PersonalizerAgent:
         """Get count of items in knowledge base."""
         try:
             import asyncio
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             return await loop.run_in_executor(None, kb._collection.count)
         except Exception:
             return 0

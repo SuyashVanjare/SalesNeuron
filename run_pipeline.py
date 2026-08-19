@@ -240,6 +240,15 @@ async def main():
 
     console.print(f"\n[dim]💾 Run log saved → {out_path}[/dim]\n")
 
+    # Auto check for new replies after every successful send
+    if result.get("status") == "sent" and sender_email:
+        try:
+            new_replies = await check_replies(sender_email)
+            if new_replies > 0:
+                console.print(f"[bold green]📬 {new_replies} new reply(s) detected![/bold green]\n")
+        except Exception:
+            pass
+
 
 if __name__ == "__main__":
     asyncio.run(main())

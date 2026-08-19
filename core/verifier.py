@@ -161,7 +161,7 @@ class EmailVerifier:
         Less reliable than DNS but works without dnspython.
         """
         try:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             await asyncio.wait_for(
                 loop.run_in_executor(
                     None,

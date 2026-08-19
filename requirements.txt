@@ -3,6 +3,8 @@
 
 playwright
 playwright-stealth
+curl-cffi
+cryptography
 google-genai
 groq
 httpx

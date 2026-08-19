@@ -84,7 +84,7 @@ class LLMClient:
 
     async def _gemini_generate(self, prompt: str, temperature: float) -> str:
         config = genai_types.GenerateContentConfig(temperature=temperature)
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         response = await loop.run_in_executor(
             None,
             lambda: self._gemini_client.models.generate_content(
@@ -96,11 +96,11 @@ class LLMClient:
         return response.text.strip()
 
     async def _groq_generate(self, prompt: str, temperature: float) -> str:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         response = await loop.run_in_executor(
             None,
             lambda: self._groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-120b",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
                 max_tokens=4096,

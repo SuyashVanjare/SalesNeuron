@@ -52,7 +52,12 @@ import logging
 import os
 import random
 import re
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Optional
 from urllib.parse import quote_plus, urlparse
+
+import aiosqlite
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +74,13 @@ MAX_DELAY = float(os.getenv("LINKEDIN_MAX_DELAY", "8.0"))
 # Shorter delay for search-engine requests (Google/DDG, not LinkedIn itself)
 SEARCH_MIN_DELAY = float(os.getenv("LINKEDIN_SEARCH_MIN_DELAY", "1.0"))
 SEARCH_MAX_DELAY = float(os.getenv("LINKEDIN_SEARCH_MAX_DELAY", "2.5"))
+
+# How long a cached result stays fresh before re-searching. Previously
+# every single pipeline run did a full live 4-strategy search from
+# scratch, even for a company already looked up yesterday — burning
+# Apify credits and 20-40s of runtime for no reason.
+LINKEDIN_CACHE_DAYS = int(os.getenv("LINKEDIN_CACHE_DAYS", "14"))
+DB_PATH = Path(os.getenv("DB_PATH", "data/salesneuron.db"))
 
 # Priority titles to look for
 CEO_TITLES = [
@@ -98,52 +110,141 @@ class LinkedInFinder:
     Returns list of dicts: [{name, title, linkedin_url, source}]
     """
 
+    def __init__(self):
+        self._db_ready = False
+
+    async def _ensure_db(self):
+        """Create the cache table on first use. Lazy — no explicit init() call needed."""
+        if self._db_ready:
+            return
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.executescript("""
+                CREATE TABLE IF NOT EXISTS linkedin_people_cache (
+                    domain          TEXT PRIMARY KEY,
+                    people_json     TEXT NOT NULL,
+                    found_count     INTEGER NOT NULL,
+                    cached_at       TEXT NOT NULL
+                );
+            """)
+            await db.commit()
+        self._db_ready = True
+
+    async def _get_cached(self, domain: str) -> Optional[list]:
+        """Return cached people list if fresh, else None."""
+        await self._ensure_db()
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT people_json, cached_at FROM linkedin_people_cache WHERE domain=?",
+                (domain,),
+            ) as cur:
+                row = await cur.fetchone()
+
+        if not row:
+            return None
+
+        cached_at = datetime.fromisoformat(row["cached_at"])
+        age = datetime.now() - cached_at
+        if age > timedelta(days=LINKEDIN_CACHE_DAYS):
+            logger.debug(f"🔗 Cache for {domain} is {age.days}d old — re-searching")
+            return None
+
+        try:
+            people = json.loads(row["people_json"])
+            logger.info(
+                f"🔗 Cache HIT for {domain} — {len(people)} people "
+                f"(cached {age.days}d ago, {(age.seconds // 3600)}h)"
+            )
+            return people
+        except Exception:
+            return None
+
+    async def _save_cache(self, domain: str, people: list):
+        """Save search results to cache — including empty results, so we
+        don't re-run all 4 strategies against a company we already
+        confirmed has no findable people."""
+        await self._ensure_db()
+        now = datetime.now().isoformat()
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                """INSERT INTO linkedin_people_cache (domain, people_json, found_count, cached_at)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT(domain) DO UPDATE SET
+                       people_json=excluded.people_json,
+                       found_count=excluded.found_count,
+                       cached_at=excluded.cached_at""",
+                (domain, json.dumps(people), len(people), now),
+            )
+            await db.commit()
+
     async def find_people(
         self,
         company_name: str,
         domain: str,
         max_results: int = 3,
+        force_refresh: bool = False,
     ) -> list[dict]:
         """
-        Find key people at a company. Tries all strategies in order,
-        starting with Apify (if configured), falling through to the
-        free strategies. Returns as soon as any strategy finds results.
+        Find key people at a company. Checks cache first (fresh within
+        LINKEDIN_CACHE_DAYS) before running any live search — a company
+        already searched recently returns instantly with zero API calls.
+
+        Tries all strategies in order, starting with Apify (if
+        configured), falling through to the free strategies. Returns as
+        soon as any strategy finds results. Result (including empty
+        results) is cached either way.
+
+        Pass force_refresh=True to bypass the cache and re-search live.
         """
         domain = domain.replace("www.", "").split("/")[0]
+
+        if not force_refresh:
+            cached = await self._get_cached(domain)
+            if cached is not None:
+                return cached[:max_results]
+
         company_slug = self._guess_linkedin_slug(company_name, domain)
         name_variants = self._build_name_variants(company_name, domain)
 
         logger.info(f"🔗 LinkedIn finder: {company_name} ({domain})")
+
+        people: list[dict] = []
 
         # Strategy 0 — Apify (most reliable, needs APIFY_API_TOKEN)
         if APIFY_API_TOKEN:
             people = await self._apify_google_search(name_variants, domain)
             if people:
                 logger.info(f"🔗 Apify found {len(people)} people")
-                return people[:max_results]
         else:
             logger.debug("🔗 APIFY_API_TOKEN not set — skipping Apify strategy")
 
         # Strategy 1 — free web search (never touches LinkedIn directly)
-        people = await self._web_search(name_variants, domain)
-        if people:
-            logger.info(f"🔗 Web search found {len(people)} people")
-            return people[:max_results]
+        if not people:
+            people = await self._web_search(name_variants, domain)
+            if people:
+                logger.info(f"🔗 Web search found {len(people)} people")
 
         # Strategy 2 — LinkedIn company page (public)
-        people = await self._scrape_company_page(company_slug, domain)
-        if people:
-            logger.info(f"🔗 Company page found {len(people)} people")
-            return people[:max_results]
+        if not people:
+            people = await self._scrape_company_page(company_slug, domain)
+            if people:
+                logger.info(f"🔗 Company page found {len(people)} people")
 
         # Strategy 3 — Session cookies
-        people = await self._session_search(company_name, domain)
-        if people:
-            logger.info(f"🔗 Session search found {len(people)} people")
-            return people[:max_results]
+        if not people:
+            people = await self._session_search(company_name, domain)
+            if people:
+                logger.info(f"🔗 Session search found {len(people)} people")
 
-        logger.info(f"🔗 No people found for {company_name}")
-        return []
+        if not people:
+            logger.info(f"🔗 No people found for {company_name}")
+
+        # Cache the result either way — a confirmed "no people found"
+        # is just as worth remembering as a hit, so the next pipeline
+        # run for this domain doesn't repeat the same 20-40s live search.
+        await self._save_cache(domain, people)
+        return people[:max_results]
 
     # ──────────────────────────────────────────────────────────────
     # Strategy 0 — Apify Google Search Scraper

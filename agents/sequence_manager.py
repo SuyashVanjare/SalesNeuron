@@ -51,6 +51,7 @@ import aiosqlite
 
 from core.email_finder import email_finder
 from core.email_models import ColdEmail
+from core.knowledge_base import kb
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +119,7 @@ class SequenceManager:
                     subject             TEXT NOT NULL,
                     body                TEXT NOT NULL,
                     buying_signal_used  TEXT,
+                    knowledge_chunks_used TEXT,
                     sender_email        TEXT,
                     status              TEXT DEFAULT 'pending',
                     gmail_message_id    TEXT,
@@ -151,6 +153,17 @@ class SequenceManager:
                     ON followups(sequence_id);
             """)
             await db.commit()
+
+            # Migration: existing DBs created before this column existed
+            # won't get it from CREATE TABLE IF NOT EXISTS above (that
+            # only applies to brand-new tables). Add it if missing.
+            try:
+                await db.execute(
+                    "ALTER TABLE sequences ADD COLUMN knowledge_chunks_used TEXT"
+                )
+                await db.commit()
+            except Exception:
+                pass  # column already exists — expected on repeat runs
 
         await email_finder.init()
         self._ready = True
@@ -272,6 +285,14 @@ class SequenceManager:
                 person_id=person_id,
             )
 
+        # Record which knowledge chunks were used, so a future reply
+        # on this sequence can credit them (see check_replies() below).
+        if cold_email.knowledge_chunks_used:
+            try:
+                await kb.record_feedback(cold_email.knowledge_chunks_used, "sent")
+            except Exception as e:
+                logger.debug(f"📬 Knowledge feedback recording failed (non-fatal): {e}")
+
         logger.info(
             f"📬 ✅ Sent to {contact_email} | sequence_id={seq_id} | "
             f"message_id={message_id}"
@@ -377,6 +398,56 @@ class SequenceManager:
 
         return sent_count
 
+    async def _is_auto_reply(self, gmail, message_id: str) -> bool:
+        """
+        Detect whether a Gmail message is an automated response rather
+        than a genuine human reply. Checks two independent signals:
+
+        1. Headers — RFC 3834 defines 'Auto-Submitted' for exactly this
+           purpose; many systems also send 'X-Autoreply' or
+           'X-Autorespond'. Any value other than 'no' means automated.
+        2. Subject/snippet phrasing — catches auto-responders that don't
+           set proper headers (surprisingly common: some ticketing
+           systems and basic out-of-office setups skip them entirely).
+
+        Returns True if this looks automated — caller should NOT count
+        it as a real reply (no reply-rate credit, no RAG feedback boost,
+        follow-ups stay scheduled since a human hasn't actually responded).
+        """
+        try:
+            msg = gmail.users().messages().get(
+                userId="me", id=message_id, format="metadata",
+                metadataHeaders=["Auto-Submitted", "X-Autoreply", "X-Autorespond", "Subject"],
+            ).execute()
+
+            headers = {
+                h["name"].lower(): h["value"]
+                for h in msg.get("payload", {}).get("headers", [])
+            }
+
+            auto_submitted = headers.get("auto-submitted", "no").lower()
+            if auto_submitted not in ("no", ""):
+                return True
+            if headers.get("x-autoreply") or headers.get("x-autorespond"):
+                return True
+
+            subject = headers.get("subject", "").lower()
+            snippet = (msg.get("snippet", "") or "").lower()
+            auto_phrases = [
+                "out of office", "automatic reply", "auto-reply",
+                "away from my desk", "on leave", "on vacation",
+                "ticket has been created", "we have received your",
+                "this is an automated", "do not reply to this email",
+                "undeliverable", "delivery status notification",
+                "auto acknowledgement", "auto acknowledgment",
+            ]
+            combined = f"{subject} {snippet}"
+            return any(phrase in combined for phrase in auto_phrases)
+
+        except Exception as e:
+            logger.debug(f"📬 Auto-reply check failed for {message_id}: {e}")
+            return False  # Fail open — better to over-count than miss a real reply
+
     async def check_replies(self, sender_email: str) -> int:
         """
         Poll Gmail inbox for replies to sent sequences.
@@ -389,7 +460,7 @@ class SequenceManager:
         async with aiosqlite.connect(self._db_path) as db:
             db.row_factory = aiosqlite.Row
             async with db.execute(
-                """SELECT id, gmail_thread_id, contact_email
+                """SELECT id, gmail_thread_id, contact_email, knowledge_chunks_used
                    FROM sequences
                    WHERE status = 'sent' AND gmail_thread_id IS NOT NULL""",
             ) as cur:
@@ -412,8 +483,20 @@ class SequenceManager:
                 ).execute()
                 messages = thread.get("messages", [])
 
-                # If thread has more than 1 message, someone replied
+                # If thread has more than 1 message, someone (or something)
+                # replied. Before crediting it as a real reply, filter out
+                # auto-responders — out-of-office, ticket-system acks, and
+                # mail-loop bounces all add a message to the thread too,
+                # and were previously counted identically to a human reply.
                 if len(messages) > 1:
+                    latest_msg = messages[-1]
+                    if await self._is_auto_reply(gmail, latest_msg["id"]):
+                        logger.info(
+                            f"📬 Skipped auto-reply from {seq['contact_email']} "
+                            f"(seq={seq['id']}) — not counted as engagement"
+                        )
+                        continue
+
                     reply_at = datetime.now().isoformat()
                     async with aiosqlite.connect(self._db_path) as db:
                         await db.execute(
@@ -434,6 +517,20 @@ class SequenceManager:
                         email=seq["contact_email"],
                         event_type="replied",
                     )
+
+                    # Credit whichever knowledge chunks were used in this
+                    # email — this is what lets search() start preferring
+                    # chunks with a proven reply track record over merely
+                    # semantically-similar ones. Without this, the "sent"
+                    # feedback from send() was being recorded but nothing
+                    # ever completed the loop by recording "replied".
+                    try:
+                        chunks = json.loads(seq["knowledge_chunks_used"] or "[]")
+                        if chunks:
+                            await kb.record_feedback(chunks, "replied")
+                    except Exception as e:
+                        logger.debug(f"📬 Knowledge feedback on reply failed (non-fatal): {e}")
+
                     reply_count += 1
                     logger.info(
                         f"📬 Reply detected from {seq['contact_email']} "
@@ -563,7 +660,7 @@ class SequenceManager:
             body_payload["threadId"] = thread_id
 
         # Run in executor (Gmail SDK is sync)
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             None,
             lambda: gmail.users().messages().send(
@@ -588,15 +685,16 @@ class SequenceManager:
         gmail_message_id: Optional[str] = None,
         gmail_thread_id: Optional[str] = None,
     ) -> int:
+        chunks_json = json.dumps(cold_email.knowledge_chunks_used or [])
         async with aiosqlite.connect(self._db_path) as db:
             cursor = await db.execute(
                 """
                 INSERT INTO sequences
                     (company_name, website, contact_name, contact_email,
-                     subject, body, buying_signal_used, sender_email,
-                     status, gmail_message_id, gmail_thread_id,
+                     subject, body, buying_signal_used, knowledge_chunks_used,
+                     sender_email, status, gmail_message_id, gmail_thread_id,
                      sent_at, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     cold_email.company_name,
@@ -606,6 +704,7 @@ class SequenceManager:
                     cold_email.subject,
                     cold_email.body,
                     cold_email.buying_signal_used,
+                    chunks_json,
                     sender_email,
                     status,
                     gmail_message_id,

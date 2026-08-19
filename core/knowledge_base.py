@@ -19,12 +19,16 @@ import os
 import json
 import logging
 import asyncio
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+import aiosqlite
 
 logger = logging.getLogger(__name__)
 
 DB_PATH = str(Path(os.getenv("CHROMA_PATH", "data/chromadb")))
+FEEDBACK_DB_PATH = Path(os.getenv("DB_PATH", "data/salesneuron.db"))
 
 # ──────────────────────────────────────────────────────────────────
 # ✏️  EDIT THIS — your product information
@@ -184,6 +188,71 @@ PRODUCT_KNOWLEDGE = [
             "for a team of 5."
         ),
     },
+    {
+        "id": "usecase_hardware_robotics",
+        "category": "use_case",
+        "title": "Use Case: Hardware and Robotics Companies",
+        "content": (
+            "Hardware and robotics companies sell to data centers, manufacturers, and facility "
+            "operators — all with very specific buying triggers: infrastructure expansion, "
+            "facility upgrades, new compute deployments. SalesNeuron scans live web signals "
+            "to find companies actively expanding physical AI compute infrastructure, posting "
+            "jobs for facilities engineers, or announcing new data center builds — so your "
+            "sales team pitches exactly when these prospects are ready to buy."
+        ),
+    },
+    {
+        "id": "usecase_web3_blockchain",
+        "category": "use_case",
+        "title": "Use Case: Blockchain and Web3 Consulting Firms",
+        "content": (
+            "Web3 and blockchain consulting firms win clients when companies are actively "
+            "exploring blockchain adoption or digital transformation. SalesNeuron detects "
+            "tech migration signals — companies mentioning legacy system limitations, posting "
+            "jobs for blockchain engineers, or announcing tokenization initiatives. "
+            "Reach prospects during their evaluation window instead of cold-pitching "
+            "companies with no active need."
+        ),
+    },
+    {
+        "id": "usecase_ai_security",
+        "category": "use_case",
+        "title": "Use Case: AI Security and Compliance Companies",
+        "content": (
+            "AI security companies (agent guardrails, LLM safety, compliance tools) sell to "
+            "companies actively deploying AI agents or LLMs in production. "
+            "SalesNeuron detects these companies by scanning job postings for 'AI agents', "
+            "'autonomous systems', 'LLM safety', product launches mentioning AI integration, "
+            "and pain points like 'data access controls' or 'AI governance'. "
+            "Pitch AI security tools exactly when companies are building systems that need them."
+        ),
+    },
+    {
+        "id": "usecase_early_stage_founders",
+        "category": "use_case",
+        "title": "Use Case: Early-Stage Founders Doing Their Own Sales",
+        "content": (
+            "Early-stage founders spend 10+ hours per week on manual outreach — "
+            "researching prospects, writing personalized emails, following up. "
+            "SalesNeuron automates this entire workflow so founders can focus on "
+            "product and customer conversations instead of spreadsheets. "
+            "Best fit: B2B founders doing their own sales before hiring an SDR, "
+            "especially targeting technical buyers or other startups."
+        ),
+    },
+    {
+        "id": "usecase_computer_vision_ml",
+        "category": "use_case",
+        "title": "Use Case: Computer Vision and ML Tooling Companies",
+        "content": (
+            "Companies selling ML infrastructure, computer vision APIs, or AI developer tools "
+            "need to find teams actively building with these technologies. "
+            "SalesNeuron detects skill demand signals — companies posting jobs for ML engineers, "
+            "computer vision specialists, or Python/PyTorch developers — and identifies "
+            "tech migration signals when teams mention moving from legacy CV tools. "
+            "Target buyers at the exact moment they are scaling their ML infrastructure."
+        ),
+    },
     # Add these chunks to PRODUCT_KNOWLEDGE:
     {
         "title": "Use Case: Hardware/Robotics Companies",
@@ -215,6 +284,84 @@ class KnowledgeBase:
         self._client = None
         self._collection = None
         self._ready = False
+        self._feedback_ready = False
+
+    async def _ensure_feedback_db(self):
+        """
+        Create the chunk feedback table on first use. Tracks how often
+        each knowledge chunk gets used in a sent email, and how often
+        that led to a reply — data ColdEmail.knowledge_chunks_used and
+        SequenceManager's reply detection were already collecting, but
+        nothing was reading it back to actually improve retrieval.
+        """
+        if self._feedback_ready:
+            return
+        FEEDBACK_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        async with aiosqlite.connect(FEEDBACK_DB_PATH) as db:
+            await db.executescript("""
+                CREATE TABLE IF NOT EXISTS chunk_feedback (
+                    title           TEXT PRIMARY KEY,
+                    times_used      INTEGER NOT NULL DEFAULT 0,
+                    times_replied   INTEGER NOT NULL DEFAULT 0,
+                    updated_at      TEXT NOT NULL
+                );
+            """)
+            await db.commit()
+        self._feedback_ready = True
+
+    async def record_feedback(self, chunk_titles: list[str], event_type: str):
+        """
+        Record that one or more knowledge chunks were used in an email,
+        and (separately) whether that email got a reply.
+
+        event_type: 'sent' — increments times_used for each chunk
+                    'replied' — increments times_replied for each chunk
+                    (call 'sent' when the email goes out, then 'replied'
+                    later if/when SequenceManager.check_replies() finds
+                    a reply on that sequence)
+        """
+        if not chunk_titles:
+            return
+        await self._ensure_feedback_db()
+        now = datetime.now().isoformat()
+
+        async with aiosqlite.connect(FEEDBACK_DB_PATH) as db:
+            for title in chunk_titles:
+                if event_type == "sent":
+                    await db.execute(
+                        """INSERT INTO chunk_feedback (title, times_used, times_replied, updated_at)
+                           VALUES (?, 1, 0, ?)
+                           ON CONFLICT(title) DO UPDATE SET
+                               times_used = times_used + 1,
+                               updated_at = excluded.updated_at""",
+                        (title, now),
+                    )
+                elif event_type == "replied":
+                    await db.execute(
+                        """INSERT INTO chunk_feedback (title, times_used, times_replied, updated_at)
+                           VALUES (?, 0, 1, ?)
+                           ON CONFLICT(title) DO UPDATE SET
+                               times_replied = times_replied + 1,
+                               updated_at = excluded.updated_at""",
+                        (title, now),
+                    )
+            await db.commit()
+
+        logger.debug(f"📚 Feedback recorded ({event_type}): {chunk_titles}")
+
+    async def _get_reply_rates(self) -> dict:
+        """Return {title: reply_rate} for all chunks with recorded feedback."""
+        await self._ensure_feedback_db()
+        async with aiosqlite.connect(FEEDBACK_DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                "SELECT title, times_used, times_replied FROM chunk_feedback WHERE times_used > 0"
+            ) as cur:
+                rows = await cur.fetchall()
+        return {
+            r["title"]: r["times_replied"] / r["times_used"]
+            for r in rows
+        }
 
     async def init(self):
         """Initialize ChromaDB and load existing collection if available."""
@@ -223,7 +370,7 @@ class KnowledgeBase:
 
         Path(DB_PATH).mkdir(parents=True, exist_ok=True)
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         self._client = await loop.run_in_executor(
             None,
             lambda: chromadb.PersistentClient(path=DB_PATH)
@@ -255,7 +402,7 @@ class KnowledgeBase:
         if not self._ready:
             await self.init()
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         # Clear existing data
         existing = await loop.run_in_executor(None, self._collection.count)
@@ -306,7 +453,7 @@ class KnowledgeBase:
         if not self._ready:
             await self.init()
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         count = await loop.run_in_executor(None, self._collection.count)
 
         where = {"category": category} if category else None
@@ -315,7 +462,7 @@ class KnowledgeBase:
             None,
             lambda: self._collection.query(
                 query_texts=[query],
-                n_results=min(n_results, count),
+                n_results=min(n_results * 2, count),  # over-fetch, re-rank below
                 where=where,
             )
         )
@@ -330,7 +477,28 @@ class KnowledgeBase:
                     "distance": results["distances"][0][i] if "distances" in results else 0,
                 })
 
-        return chunks
+        # Re-rank using reply-rate feedback, blended with vector distance.
+        # A chunk with a proven track record of leading to replies should
+        # outrank one that's merely semantically closer but has never
+        # actually worked — this is the data ColdEmail.knowledge_chunks_used
+        # + SequenceManager's reply detection were already collecting,
+        # just never fed back into retrieval until now.
+        reply_rates = await self._get_reply_rates()
+        if reply_rates and chunks:
+            max_distance = max((c["distance"] for c in chunks), default=1) or 1
+
+            def _rank_score(chunk):
+                # Lower distance = better match (normalize to 0-1, invert)
+                distance_score = 1 - (chunk["distance"] / max_distance)
+                reply_boost = reply_rates.get(chunk["title"], 0.0)
+                # Blend: relevance still dominates, reply-rate breaks ties
+                # and can promote a proven chunk over a marginally closer
+                # but unproven one.
+                return (distance_score * 0.75) + (reply_boost * 0.25)
+
+            chunks.sort(key=_rank_score, reverse=True)
+
+        return chunks[:n_results]
 
     async def search_for_signals(self, buying_signals: list) -> list[dict]:
         """
